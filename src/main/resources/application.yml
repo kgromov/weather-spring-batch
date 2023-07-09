@@ -1,0 +1,32 @@
+spring:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+#    properties:
+#      hibernate:
+#        batch_size: 100
+#        order_inserts: true
+#        generate_statistics: true
+    show-sql: true
+  datasource:
+    url: "jdbc:mysql://localhost:3306/weather_archive"
+    username: root
+    password: admin
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+#      isolation-level-for-create: default
+
+# custom properties
+weather:
+  source:
+    url: "https://ua.sinoptik.ua"
