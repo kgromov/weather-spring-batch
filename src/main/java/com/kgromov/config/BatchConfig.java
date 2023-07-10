@@ -1,5 +1,6 @@
 package com.kgromov.config;
 
+import com.kgromov.batch.CustomPartitioner;
 import com.kgromov.batch.TemperatureReader;
 import com.kgromov.batch.TemperatureWriter;
 import com.kgromov.domain.DailyTemperature;
@@ -11,13 +12,15 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.partition.PartitionHandler;
+import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.time.LocalDate;
 
@@ -53,28 +56,55 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step fetchTemperatureStep(@Qualifier("stepExecutor") TaskExecutor taskExecutor, TemperatureReader temperatureReader) {
-        return stepBuilderFactory.get("fetch-temperature-step").<DailyTemperature, DailyTemperature>chunk(10)
-                .reader(temperatureReader)
-                .processor(processor())
-                .writer(temperatureWriter)
-                .taskExecutor(taskExecutor)
+    public CustomPartitioner partitioner() {
+        return CustomPartitioner.builder()
+                .startIndex(1)
+                .endIndex(10)
                 .build();
     }
 
     @Bean
-    public Job fetchTemperatureJob(Step fetchTemperatureStep) {
+    public PartitionHandler partitionHandler(@Qualifier("stepExecutor") TaskExecutor taskExecutor, Step fetchTemperatureStep) {
+        TaskExecutorPartitionHandler taskExecutorPartitionHandler = new TaskExecutorPartitionHandler();
+        taskExecutorPartitionHandler.setGridSize(Runtime.getRuntime().availableProcessors() - 1);
+        taskExecutorPartitionHandler.setTaskExecutor(taskExecutor);
+        taskExecutorPartitionHandler.setStep(fetchTemperatureStep);
+        return taskExecutorPartitionHandler;
+    }
+
+    @Bean
+    public Step fetchTemperatureStep(TemperatureReader temperatureReader, WeatherProcessor processor) {
+        return stepBuilderFactory.get("fetch-temperature-step").<DailyTemperature, DailyTemperature>chunk(10)
+                .reader(temperatureReader)
+                .processor(processor)
+                .writer(temperatureWriter)
+                .build();
+    }
+
+    @Bean
+    public Step masterStep(Step fetchTemperatureStep, CustomPartitioner partitioner, PartitionHandler partitionHandler) {
+        return stepBuilderFactory.get("master-step")
+                .partitioner(fetchTemperatureStep.getName(), partitioner)
+                .partitionHandler(partitionHandler)
+                .build();
+    }
+
+    @Bean
+    public Job fetchTemperatureJob(Step masterStep) {
         return jobBuilderFactory.get("fetchTemperature")
-                .flow(fetchTemperatureStep)
+                .flow(masterStep)
                 .end()
                 .build();
     }
 
     @Bean
     public TaskExecutor stepExecutor() {
-        SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-        asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());
-        return asyncTaskExecutor;
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        int cpusPerJob = Runtime.getRuntime().availableProcessors() - 1;
+        taskExecutor.setMaxPoolSize(cpusPerJob);
+        taskExecutor.setCorePoolSize(cpusPerJob / 2);
+        taskExecutor.setQueueCapacity(cpusPerJob * 2);
+        return taskExecutor;
     }
 
     private static class WeatherProcessor implements ItemProcessor<DailyTemperature, DailyTemperature> {
