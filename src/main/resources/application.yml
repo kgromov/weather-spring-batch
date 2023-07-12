@@ -6,10 +6,10 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
-#    properties:
-#      hibernate:
-#        batch_size: 100
-#        order_inserts: true
+    properties:
+      hibernate:
+        batch_size: 100
+        order_inserts: true
 #        generate_statistics: true
     show-sql: true
   datasource:
@@ -18,6 +18,15 @@ spring:
     password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test
+      database: test
+      host: localhost
+      port: 27017
+#      username:
+#      password:
 
   batch:
     job:

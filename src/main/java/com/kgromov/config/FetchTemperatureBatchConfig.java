@@ -27,7 +27,7 @@ import static com.kgromov.domain.City.ODESSA;
 @Configuration
 @EnableBatchProcessing
 @RequiredArgsConstructor
-public class BatchConfig {
+public class FetchTemperatureBatchConfig {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final TemperatureWriter temperatureWriter;

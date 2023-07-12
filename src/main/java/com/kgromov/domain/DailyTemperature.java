@@ -6,7 +6,7 @@ import javax.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "DayTemperature")
+@Table(name = "DayTemperature_batch_read")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
