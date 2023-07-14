@@ -15,8 +15,10 @@ import org.springframework.batch.item.database.JpaCursorItemReader;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import javax.persistence.EntityManagerFactory;
@@ -67,12 +69,13 @@ public class SyncTemperatureBatchConfig {
 
     @Bean
     public Step writeToMongoStep(JpaPagingItemReader<DailyTemperature> jpaPagingItemReader,
-                                 MongoItemWriter<DailyTemperatureDocument> mongoItemWriter) {
+                                 MongoItemWriter<DailyTemperatureDocument> mongoItemWriter,
+                                 @Qualifier("stepExecutor") TaskExecutor taskExecutor) {
         return stepBuilderFactory.get("write-to-mongo-step").<DailyTemperature, DailyTemperatureDocument>chunk(1000)
                 .reader(jpaPagingItemReader)
                 .processor(toMongoProcessor())
                 .writer(mongoItemWriter)
-//                .taskExecutor(taskExecutor)  // make no sense for not reactive driver
+                .taskExecutor(taskExecutor)  // make no sense for not reactive driver
                 .build();
     }
 

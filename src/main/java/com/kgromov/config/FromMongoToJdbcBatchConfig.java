@@ -73,7 +73,7 @@ public class FromMongoToJdbcBatchConfig {
     }
 
     @Bean
-    public Step readToMongoStep(MongoItemReader<DailyTemperatureDocument> mongoItemReader,
+    public Step readFromMongoStep(MongoItemReader<DailyTemperatureDocument> mongoItemReader,
                                 JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter) {
         return stepBuilderFactory.get("read-from-mongo-step").<DailyTemperatureDocument, DailyTemperature>chunk(1000)
                 .reader(mongoItemReader)
@@ -84,9 +84,9 @@ public class FromMongoToJdbcBatchConfig {
     }
 
     @Bean
-    public Job readToMongoJob(Step readToMongoStep) {
+    public Job readFromMongoJob(Step readFromMongoStep) {
         return jobBuilderFactory.get("readFromMongoJob")
-                .flow(readToMongoStep)
+                .flow(readFromMongoStep)
                 .end()
                 .build();
     }
