@@ -35,11 +35,14 @@ public class FetchTemperatureBatchConfig {
 
     private final TemperatureExtractor temperatureExtractor;
 
+    private final StepsDataHolder dataHolder;
+
     @Lazy
     @Bean
     public TemperatureReader temperatureReader() {
         DailyTemperature latestDateTemperature = temperatureService.getLatestDateTemperature();
         LocalDate startDate = latestDateTemperature.getDate().plusDays(1);
+        dataHolder.put("syncStartDate", startDate);
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)

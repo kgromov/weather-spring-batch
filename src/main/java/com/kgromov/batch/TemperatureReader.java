@@ -3,8 +3,6 @@ package com.kgromov.batch;
 import com.kgromov.domain.City;
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.service.TemperatureExtractor;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

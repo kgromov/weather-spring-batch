@@ -24,13 +24,13 @@ public class WeatherSpringBatchApplication {
     ApplicationRunner applicationRunner(JobLauncher jobLauncher,
                                         Job fetchTemperatureJob,
                                         Job writeToMongoJob,
-                                        Job readToMongoJob) {
+                                        Job syncTemperatureJob) {
         return args -> {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("startAt", LocalDateTime.now().format(ISO_DATE_TIME))
                     .toJobParameters();
 //            jobLauncher.run(fetchTemperatureJob, jobParameters);
-            jobLauncher.run(readToMongoJob, jobParameters);
+            jobLauncher.run(syncTemperatureJob, jobParameters);
 
         };
     }
