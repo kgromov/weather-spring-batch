@@ -10,7 +10,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
 @SpringBootApplication
 public class WeatherSpringBatchApplication {
@@ -20,12 +21,17 @@ public class WeatherSpringBatchApplication {
     }
 
     @Bean
-    ApplicationRunner applicationRunner(JobLauncher jobLauncher, Job fetchTemperatureJob) {
+    ApplicationRunner applicationRunner(JobLauncher jobLauncher,
+                                        Job fetchTemperatureJob,
+                                        Job writeToMongoJob,
+                                        Job syncTemperatureJob) {
         return args -> {
             JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("startAt", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME))
+                    .addString("startAt", LocalDateTime.now().format(ISO_DATE_TIME))
                     .toJobParameters();
-            jobLauncher.run(fetchTemperatureJob, jobParameters);
+//            jobLauncher.run(fetchTemperatureJob, jobParameters);
+            jobLauncher.run(syncTemperatureJob, jobParameters);
+
         };
     }
 }

@@ -30,7 +30,7 @@ import static com.kgromov.domain.City.ODESSA;
 @Configuration
 @EnableBatchProcessing
 @RequiredArgsConstructor
-public class BatchConfig {
+public class FetchTemperatureBatchConfig {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final TemperatureWriter temperatureWriter;
@@ -38,11 +38,14 @@ public class BatchConfig {
 
     private final TemperatureExtractor temperatureExtractor;
 
+    private final StepsDataHolder dataHolder;
+
     @Lazy
     @Bean
     public TemperatureReader temperatureReader() {
         DailyTemperature latestDateTemperature = temperatureService.getLatestDateTemperature();
         LocalDate startDate = latestDateTemperature.getDate().plusDays(1);
+        dataHolder.put("syncStartDate", startDate);
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)
