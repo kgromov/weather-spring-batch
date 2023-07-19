@@ -22,15 +22,14 @@ public class WeatherSpringBatchApplication {
 
     @Bean
     ApplicationRunner applicationRunner(JobLauncher jobLauncher,
-                                        Job fetchTemperatureJob,
-                                        Job writeToMongoJob,
-                                        Job syncTemperatureJob) {
+//                                        Job syncTemperatureJob,
+                                        Job saveDataInStepContextJob) {
         return args -> {
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("startAt", LocalDateTime.now().format(ISO_DATE_TIME))
                     .toJobParameters();
-//            jobLauncher.run(fetchTemperatureJob, jobParameters);
-            jobLauncher.run(syncTemperatureJob, jobParameters);
+//            jobLauncher.run(syncTemperatureJob, jobParameters);
+            jobLauncher.run(saveDataInStepContextJob, jobParameters);
 
         };
     }
