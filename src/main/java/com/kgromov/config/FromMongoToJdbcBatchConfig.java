@@ -2,16 +2,17 @@ package com.kgromov.config;
 
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.domain.DailyTemperatureDocument;
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
@@ -19,8 +20,8 @@ import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.util.Map;
 
@@ -30,8 +31,6 @@ import static org.springframework.data.domain.Sort.Direction.ASC;
 @Slf4j
 @RequiredArgsConstructor
 public class FromMongoToJdbcBatchConfig {
-    private final JobBuilderFactory jobBuilderFactory;
-    private final StepBuilderFactory stepBuilderFactory;
     private final DataSource dataSource;
 
     @Bean
@@ -74,8 +73,11 @@ public class FromMongoToJdbcBatchConfig {
 
     @Bean
     public Step readToMongoStep(MongoItemReader<DailyTemperatureDocument> mongoItemReader,
-                                JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter) {
-        return stepBuilderFactory.get("read-from-mongo-step").<DailyTemperatureDocument, DailyTemperature>chunk(1000)
+                                JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter,
+                                JobRepository jobRepository,
+                                PlatformTransactionManager transactionManager) {
+        return new StepBuilder("read-from-mongo-step", jobRepository)
+                .<DailyTemperatureDocument, DailyTemperature>chunk(1000, transactionManager)
                 .reader(mongoItemReader)
                 .processor(fromMongoProcessor())
                 .writer(jdbcBatchItemWriter)
@@ -84,8 +86,8 @@ public class FromMongoToJdbcBatchConfig {
     }
 
     @Bean
-    public Job readToMongoJob(Step readToMongoStep) {
-        return jobBuilderFactory.get("readFromMongoJob")
+    public Job readToMongoJob(Step readToMongoStep, JobRepository jobRepository) {
+        return new JobBuilder("readFromMongoJob", jobRepository)
                 .flow(readToMongoStep)
                 .end()
                 .build();

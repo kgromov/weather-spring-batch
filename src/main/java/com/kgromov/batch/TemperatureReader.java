@@ -3,12 +3,12 @@ package com.kgromov.batch;
 import com.kgromov.domain.City;
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.service.TemperatureExtractor;
+import jakarta.annotation.PostConstruct;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 
-import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;

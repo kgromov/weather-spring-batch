@@ -9,8 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 
@@ -25,11 +27,8 @@ import static com.kgromov.domain.City.ODESSA;
 
 
 @Configuration
-@EnableBatchProcessing
 @RequiredArgsConstructor
 public class FetchTemperatureBatchConfig {
-    private final JobBuilderFactory jobBuilderFactory;
-    private final StepBuilderFactory stepBuilderFactory;
     private final TemperatureWriter temperatureWriter;
     private final TemperatureService temperatureService;
 
@@ -56,8 +55,12 @@ public class FetchTemperatureBatchConfig {
     }
 
     @Bean
-    public Step fetchTemperatureStep(@Qualifier("stepExecutor") TaskExecutor taskExecutor, TemperatureReader temperatureReader) {
-        return stepBuilderFactory.get("fetch-temperature-step").<DailyTemperature, DailyTemperature>chunk(10)
+    public Step fetchTemperatureStep(@Qualifier("stepExecutor") TaskExecutor taskExecutor,
+                                     TemperatureReader temperatureReader,
+                                     JobRepository jobRepository,
+                                     PlatformTransactionManager transactionManager) {
+        return new StepBuilder("fetch-temperature-step", jobRepository)
+                .<DailyTemperature, DailyTemperature>chunk(10, transactionManager)
                 .reader(temperatureReader)
                 .processor(processor())
                 .writer(temperatureWriter)
@@ -66,8 +69,8 @@ public class FetchTemperatureBatchConfig {
     }
 
     @Bean
-    public Job fetchTemperatureJob(Step fetchTemperatureStep) {
-        return jobBuilderFactory.get("fetchTemperature")
+    public Job fetchTemperatureJob(Step fetchTemperatureStep, JobRepository jobRepository) {
+        return new JobBuilder("fetchTemperature", jobRepository)
                 .flow(fetchTemperatureStep)
                 .end()
                 .build();

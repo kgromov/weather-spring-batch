@@ -26,6 +26,8 @@ public class WeatherSpringBatchApplication {
                                         Job writeToMongoJob,
                                         Job syncTemperatureJob) {
         return args -> {
+
+
             JobParameters jobParameters = new JobParametersBuilder()
                     .addString("startAt", LocalDateTime.now().format(ISO_DATE_TIME))
                     .toJobParameters();
