@@ -28,49 +28,38 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.time.LocalDate;
 import java.util.Map;
 
+import static java.time.format.DateTimeFormatter.ISO_DATE;
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-//@EnableJpaRepositories
 public class SyncTemperatureBatchConfig {
 
     // step 1 - fetch data from input source - defined outside
 
     // step 2 - fetch data to sync in target db
-//    @Bean
-    public MongoItemReader<DailyTemperatureDocument> syncDatesReader(MongoTemplate mongoTemplate
-            /*@Value("#{jobParameters[fullPathFileName]}") String syncStartDate*/) {
+    @Bean
+    @StepScope
+    public MongoItemReader<DailyTemperatureDocument> syncDatesReader(MongoTemplate mongoTemplate,
+                                                                     @Value("#{jobParameters[syncStartDate]}") LocalDate syncStartDate) {
         return new MongoItemReaderBuilder<DailyTemperatureDocument>()
                 .name("mongo-dates-to-sync-reader")
                 .template(mongoTemplate)
                 .collection("weather_archive_batch")
-//                .jsonQuery("{date: {$gt: ISODate('"+ dataHolder.getValue("syncStartDate", LocalDate.class).format(ISO_DATE) +"')}}")
+                .jsonQuery("{date: {$gt: ISODate('" + syncStartDate.format(ISO_DATE) + "')}}")
                 // TODO: simply does not executed when using parameterValues resolver (aka PreparedStatement)
                 /*   .jsonQuery("{date: {$gt: ?0}}")
-                   .parameterValues(dataHolder.getValue("syncStartDate", LocalDate.class).format(ISO_DATE_TIME))*/
+                   .parameterValues(syncStartDate.format(ISO_DATE_TIME))*/
                 .fields("{'date': 1, '_id': 0}")
                 .sorts(Map.of("date", ASC))
                 .targetType(DailyTemperatureDocument.class)
                 .pageSize(1000)
                 .build();
     }
-
     @Bean
-    public MongoItemReaderBuilder<DailyTemperatureDocument> syncDatesReaderBuilder(MongoTemplate mongoTemplate) {
-        return new MongoItemReaderBuilder<DailyTemperatureDocument>()
-                .name("mongo-dates-to-sync-reader")
-                .template(mongoTemplate)
-                .collection("weather_archive_batch")
-                .targetType(DailyTemperatureDocument.class)
-                .pageSize(1000);
-    }
-
-    @Bean
-    public MongoSyncDatesReaderTasklet syncDatesReaderTasklet(MongoItemReaderBuilder<DailyTemperatureDocument> syncDatesReaderBuilder) {
-//        return new MongoSyncDatesReaderTasklet(syncDatesReader);
-        return new MongoSyncDatesReaderTasklet(syncDatesReaderBuilder);
+    public MongoSyncDatesReaderTasklet syncDatesReaderTasklet(MongoItemReader<DailyTemperatureDocument> syncDatesReader) {
+        return new MongoSyncDatesReaderTasklet(syncDatesReader);
     }
 
     @Bean
