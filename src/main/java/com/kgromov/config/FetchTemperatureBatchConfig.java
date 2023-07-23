@@ -5,6 +5,7 @@ import com.kgromov.batch.TemperatureWriter;
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.service.TemperatureExtractor;
 import com.kgromov.service.TemperatureService;
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -13,6 +14,8 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.database.JpaItemWriter;
+import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,19 +32,16 @@ import static com.kgromov.domain.City.ODESSA;
 @Configuration
 @RequiredArgsConstructor
 public class FetchTemperatureBatchConfig {
-    private final TemperatureWriter temperatureWriter;
+//    private final TemperatureWriter temperatureWriter;
     private final TemperatureService temperatureService;
 
     private final TemperatureExtractor temperatureExtractor;
-
-    private final StepsDataHolder dataHolder;
 
     @Lazy
     @Bean
     public TemperatureReader temperatureReader() {
         DailyTemperature latestDateTemperature = temperatureService.getLatestDateTemperature();
         LocalDate startDate = latestDateTemperature.getDate().plusDays(1);
-        dataHolder.put("syncStartDate", startDate);
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)
@@ -58,12 +58,13 @@ public class FetchTemperatureBatchConfig {
     public Step fetchTemperatureStep(@Qualifier("stepExecutor") TaskExecutor taskExecutor,
                                      TemperatureReader temperatureReader,
                                      JobRepository jobRepository,
+                                     JpaItemWriter<DailyTemperature> jpaItemWriter,
                                      PlatformTransactionManager transactionManager) {
         return new StepBuilder("fetch-temperature-step", jobRepository)
                 .<DailyTemperature, DailyTemperature>chunk(10, transactionManager)
                 .reader(temperatureReader)
                 .processor(processor())
-                .writer(temperatureWriter)
+                .writer(jpaItemWriter)
                 .taskExecutor(taskExecutor)
                 .build();
     }

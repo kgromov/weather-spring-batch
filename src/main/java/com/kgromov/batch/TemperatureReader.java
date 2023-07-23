@@ -7,6 +7,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 
 import java.time.LocalDate;
@@ -39,6 +41,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     protected DailyTemperature doRead() throws Exception {
+        log.info("Read daily temperature");
         if (city == null || startDate == null || endDate == null) {
             return null;
         }
@@ -63,12 +66,10 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
         return temperature;
     }
 
-    private static Supplier<RuntimeException> getRuntimeExceptionSupplier(LocalDate currentDate) {
-        return () -> new RuntimeException("Unable to get data for date = " + currentDate.format(ISO_DATE));
-    }
-
-    private static Supplier<RuntimeException> getRuntimeExceptionSupplier(LocalDate currentDate, Throwable throwable) {
-        return () -> new RuntimeException("Unable to get data for date = " + currentDate.format(ISO_DATE), throwable);
+    @BeforeStep
+    public void saveStartDate(StepExecution stepExecution) {
+        log.info("Save syncStartDate = {} before step execution", startDate);
+        stepExecution.getJobExecution().getExecutionContext().put("syncStartDate", startDate);
     }
 
     @Override
@@ -79,5 +80,13 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     @Override
     protected void doClose() throws Exception {
 
+    }
+
+    private static Supplier<RuntimeException> getRuntimeExceptionSupplier(LocalDate currentDate) {
+        return () -> new RuntimeException("Unable to get data for date = " + currentDate.format(ISO_DATE));
+    }
+
+    private static Supplier<RuntimeException> getRuntimeExceptionSupplier(LocalDate currentDate, Throwable throwable) {
+        return () -> new RuntimeException("Unable to get data for date = " + currentDate.format(ISO_DATE), throwable);
     }
 }
