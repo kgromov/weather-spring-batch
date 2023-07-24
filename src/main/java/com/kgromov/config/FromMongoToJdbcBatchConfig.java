@@ -38,7 +38,7 @@ public class FromMongoToJdbcBatchConfig {
         return new MongoItemReaderBuilder<DailyTemperatureDocument>()
                 .name("mongo-item-reader")
                 .template(mongoTemplate)
-                .collection("weather_archive_batch")
+                .collection("weather_archive")
                 .jsonQuery("{}")
 //                .fields("{'_id': 0, '_class': 0}")
                 .sorts(Map.of("date", ASC))

@@ -46,7 +46,7 @@ public class SyncTemperatureBatchConfig {
         return new MongoItemReaderBuilder<DailyTemperatureDocument>()
                 .name("mongo-dates-to-sync-reader")
                 .template(mongoTemplate)
-                .collection("weather_archive_batch")
+                .collection("weather_archive")
                 .jsonQuery("{date: {$gt: ISODate('" + syncStartDate.format(ISO_DATE) + "')}}")
                 // TODO: simply does not executed when using parameterValues resolver (aka PreparedStatement)
                 /*   .jsonQuery("{date: {$gt: ?0}}")
@@ -97,7 +97,7 @@ public class SyncTemperatureBatchConfig {
     @Bean
     public MongoItemWriter<DailyTemperatureDocument> mongoItemWriter(MongoTemplate mongoTemplate) {
         return new MongoItemWriterBuilder<DailyTemperatureDocument>()
-                .collection("weather_archive_batch")
+                .collection("weather_archive")
                 .template(mongoTemplate)
                 .build();
     }
