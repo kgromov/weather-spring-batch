@@ -1,8 +1,0 @@
-spring:
-  data:
-    mongodb:
-      uri: ${DB_URI}
-      username: ${DB_USER}
-      password: ${DB_PASSWORD}
-      database: test
-

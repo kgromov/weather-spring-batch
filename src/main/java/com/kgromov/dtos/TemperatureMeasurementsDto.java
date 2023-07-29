@@ -1,5 +1,6 @@
-package com.kgromov.domain;
+package com.kgromov.dtos;
 
+import com.kgromov.domain.PartOfTheDay;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

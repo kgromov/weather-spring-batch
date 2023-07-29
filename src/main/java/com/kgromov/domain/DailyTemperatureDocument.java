@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 
-@Document
+@Document(collection = "weather_archive")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

@@ -1,6 +1,6 @@
 package com.kgromov;
 
-import com.kgromov.service.TemperatureService;
+import com.kgromov.repository.DailyTemperatureRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -22,15 +22,15 @@ public class WeatherSpringBatchApplication {
 
     @Bean
     ApplicationRunner applicationRunner(JobLauncher jobLauncher,
-                                        Job syncTemperatureParallelJob,
-                                        TemperatureService temperatureService) {
+                                        Job syncTemperatureJob,
+                                        DailyTemperatureRepository temperatureRepository) {
         return args -> {
-            LocalDate syncDate = temperatureService.getLatestDateTemperature().getDate();
+            LocalDate syncDate = temperatureRepository.getLatestDateTemperature();
             JobParameters jobParameters = new JobParametersBuilder()
                     .addLocalDate("syncStartDate", syncDate)
                     .addLong("startedAt", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(syncTemperatureParallelJob, jobParameters);
+            jobLauncher.run(syncTemperatureJob, jobParameters);
         };
     }
 }

@@ -1,8 +1,8 @@
 package com.kgromov.service;
 
 import com.kgromov.domain.City;
-import com.kgromov.domain.TemperatureMeasurementsDto;
-import com.kgromov.domain.WeatherMeasurementDto;
+import com.kgromov.dtos.TemperatureMeasurementsDto;
+import com.kgromov.dtos.WeatherMeasurementDto;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;

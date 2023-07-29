@@ -1,7 +1,8 @@
 package com.kgromov.batch;
 
 import com.kgromov.domain.City;
-import com.kgromov.domain.DailyTemperature;
+import com.kgromov.dtos.DailyTemperatureDto;
+import com.kgromov.dtos.TemperatureMeasurementsDto;
 import com.kgromov.service.TemperatureExtractor;
 import jakarta.annotation.PostConstruct;
 import lombok.Builder;
@@ -19,7 +20,7 @@ import static java.time.format.DateTimeFormatter.ISO_DATE;
 
 @Slf4j
 @RequiredArgsConstructor
-public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<DailyTemperature> {
+public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<DailyTemperatureDto> {
     private City city;
     private LocalDate startDate;
     private ThreadLocal<LocalDate> currentDate = new ThreadLocal<>();
@@ -40,12 +41,12 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     }
 
     @Override
-    protected DailyTemperature doRead() throws Exception {
+    protected DailyTemperatureDto doRead() throws Exception {
         log.info("Read daily temperature");
         if (city == null || startDate == null || endDate == null) {
             return null;
         }
-        synchronized (DailyTemperature.class) {
+        synchronized (DailyTemperatureDto.class) {
             LocalDate currentDate = startDate.plusDays(daysOffset.get());
             this.currentDate.set(currentDate);
             daysOffset.getAndIncrement();
@@ -53,10 +54,10 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
         if (currentDate.get().isAfter(endDate)) {
             return null;
         }
-        DailyTemperature temperature;
+        DailyTemperatureDto temperature;
         try {
             LocalDate currentDate = this.currentDate.get();
-            temperature = temperatureExtractor.getTemperatureAt(city, currentDate).map(DailyTemperature::new)
+            temperature = temperatureExtractor.getTemperatureAt(city, currentDate).map(this::mapToDto)
                     .orElseThrow(getRuntimeExceptionSupplier(currentDate));
             log.info("Thread {}: currentItemCount = {}, daysOffset = {}, currentDate = {}, startDate = {}",
                     Thread.currentThread().getName(), getCurrentItemCount(), daysOffset, currentDate.format(ISO_DATE), startDate.format(ISO_DATE));
@@ -88,5 +89,15 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     private static Supplier<RuntimeException> getRuntimeExceptionSupplier(LocalDate currentDate, Throwable throwable) {
         return () -> new RuntimeException("Unable to get data for date = " + currentDate.format(ISO_DATE), throwable);
+    }
+
+    private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
+        return DailyTemperatureDto.builder()
+                .date(measurementsDto.getDate())
+                .morningTemperature(measurementsDto.getMorningTemperature())
+                .afternoonTemperature(measurementsDto.getAfternoonTemperature())
+                .eveningTemperature(measurementsDto.getEveningTemperature())
+                .nightTemperature(measurementsDto.getNightTemperature())
+                .build();
     }
 }

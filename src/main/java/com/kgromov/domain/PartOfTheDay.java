@@ -5,50 +5,50 @@ import java.time.LocalTime;
 public enum PartOfTheDay {
     MORNING() {
         @Override
-        LocalTime getStart() {
+        public LocalTime getStart() {
             return LocalTime.of(6, 0, 0);
         }
 
         @Override
-        LocalTime getEnd() {
+        public LocalTime getEnd() {
             return LocalTime.NOON;
         }
     },
     AFTERNOON() {
         @Override
-        LocalTime getStart() {
+        public LocalTime getStart() {
             return LocalTime.NOON;
         }
 
         @Override
-        LocalTime getEnd() {
+        public LocalTime getEnd() {
             return LocalTime.of(18, 0, 0);
         }
     },
     EVENING() {
         @Override
-        LocalTime getStart() {
+        public LocalTime getStart() {
             return LocalTime.of(18, 0, 0);
         }
 
         @Override
-        LocalTime getEnd() {
+        public LocalTime getEnd() {
             return LocalTime.MAX;
         }
     },
     NIGHT() {
         @Override
-        LocalTime getStart() {
+        public LocalTime getStart() {
             return LocalTime.MIDNIGHT;
         }
 
         @Override
-        LocalTime getEnd() {
+        public LocalTime getEnd() {
             return LocalTime.of(6, 0, 0);
         }
     };
 
-    abstract LocalTime getStart();
+    public abstract LocalTime getStart();
 
-    abstract LocalTime getEnd();
+    public abstract LocalTime getEnd();
 }
