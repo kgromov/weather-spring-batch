@@ -65,8 +65,12 @@ public class FromMongoToJdbcBatchConfig {
     public JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter() {
         return new JdbcBatchItemWriterBuilder<DailyTemperature>()
                 .dataSource(dataSource)
-                .sql("insert into DayTemperature_batch_read(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature) " +
-                        "values (:date, :morningTemperature, :afternoonTemperature, :eveningTemperature, :nightTemperature)")
+                .sql(
+                        """
+                            insert into DayTemperature(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
+                            values (:date, :morningTemperature, :afternoonTemperature, :eveningTemperature, :nightTemperature)
+                        """
+                )
                 .beanMapped()
                 .build();
     }
@@ -87,7 +91,7 @@ public class FromMongoToJdbcBatchConfig {
 
     @Bean
     public Job readToMongoJob(Step readToMongoStep, JobRepository jobRepository) {
-        return new JobBuilder("readFromMongoJob", jobRepository)
+        return new JobBuilder("read-from-mongo-job", jobRepository)
                 .flow(readToMongoStep)
                 .end()
                 .build();
