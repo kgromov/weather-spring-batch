@@ -9,7 +9,15 @@ spring:
       enabled: false
     jdbc:
       initialize-schema: always
-#      isolation-level-for-create: default
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
 
 # custom properties
 weather:
