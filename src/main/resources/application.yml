@@ -40,3 +40,9 @@ spring:
 weather:
   source:
     url: "https://ua.sinoptik.ua"
+logging:
+  level:
+    org:
+      springframework:
+        batch:
+          integration: debug

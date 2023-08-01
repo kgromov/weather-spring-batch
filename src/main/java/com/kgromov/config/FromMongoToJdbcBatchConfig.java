@@ -10,15 +10,20 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -32,6 +37,7 @@ import static org.springframework.data.domain.Sort.Direction.ASC;
 @RequiredArgsConstructor
 public class FromMongoToJdbcBatchConfig {
     private final DataSource dataSource;
+    private final @Qualifier("stepExecutor") TaskExecutor taskExecutor;
 
     @Bean
     public MongoItemReader<DailyTemperatureDocument> mongoItemReader(MongoTemplate mongoTemplate) {
@@ -52,6 +58,14 @@ public class FromMongoToJdbcBatchConfig {
         return new ReadFromMongoProcessor();
     }
 
+    @Bean
+    public AsyncItemProcessor<DailyTemperatureDocument, DailyTemperature> temperatureAsyncItemProcessor() {
+        AsyncItemProcessor<DailyTemperatureDocument, DailyTemperature> itemProcessor = new AsyncItemProcessor<>();
+        itemProcessor.setDelegate(fromMongoProcessor());
+        itemProcessor.setTaskExecutor(taskExecutor);
+        return itemProcessor;
+    }
+
     // JpaItemWriter sucks cause insert each and every row even with batch properties configured
     @Bean
     public JpaItemWriter<DailyTemperature> jpaItemWriter(EntityManagerFactory entityManagerFactory) {
@@ -65,31 +79,38 @@ public class FromMongoToJdbcBatchConfig {
     public JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter() {
         return new JdbcBatchItemWriterBuilder<DailyTemperature>()
                 .dataSource(dataSource)
-                .sql("insert into DayTemperature_batch_read(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature) " +
+                .sql("insert into DayTemperature_batch(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature) " +
                         "values (:date, :morningTemperature, :afternoonTemperature, :eveningTemperature, :nightTemperature)")
                 .beanMapped()
                 .build();
     }
 
     @Bean
-    public Step readToMongoStep(MongoItemReader<DailyTemperatureDocument> mongoItemReader,
-                                JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter,
-                                JobRepository jobRepository,
-                                PlatformTransactionManager transactionManager) {
+    public AsyncItemWriter<DailyTemperature> temperatureAsyncItemWriter() {
+        AsyncItemWriter<DailyTemperature> asyncItemWriter = new AsyncItemWriter<>();
+        asyncItemWriter.setDelegate(jdbcBatchItemWriter());
+        return asyncItemWriter;
+    }
+
+    @Bean
+    public Step readFromMongoStep(MongoItemReader<DailyTemperatureDocument> mongoItemReader,
+                                  AsyncItemProcessor<DailyTemperatureDocument, DailyTemperature> temperatureAsyncItemProcessor,
+                                  AsyncItemWriter<DailyTemperature> temperatureAsyncItemWriter,
+                                  JobRepository jobRepository,
+                                  PlatformTransactionManager transactionManager) {
         return new StepBuilder("read-from-mongo-step", jobRepository)
                 .<DailyTemperatureDocument, DailyTemperature>chunk(1000, transactionManager)
                 .reader(mongoItemReader)
-                .processor(fromMongoProcessor())
-                .writer(jdbcBatchItemWriter)
-//                .taskExecutor(taskExecutor)  // make no sense for not reactive driver
+                .processor((ItemProcessor) temperatureAsyncItemProcessor)
+                .writer(temperatureAsyncItemWriter)
+                .taskExecutor(taskExecutor)  // make no sense for not reactive driver
                 .build();
     }
 
     @Bean
-    public Job readToMongoJob(Step readToMongoStep, JobRepository jobRepository) {
-        return new JobBuilder("readFromMongoJob", jobRepository)
-                .flow(readToMongoStep)
-                .end()
+    public Job readFromMongoJob(Step readFromMongoStep, JobRepository jobRepository) {
+        return new JobBuilder("read-from-mongo-job", jobRepository)
+                .start(readFromMongoStep)
                 .build();
     }
 

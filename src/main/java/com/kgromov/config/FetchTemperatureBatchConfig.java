@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -64,6 +65,7 @@ public class FetchTemperatureBatchConfig {
     }
 
     @Bean
+    @Primary
     public TaskExecutor stepExecutor() {
         SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
         asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());

@@ -22,7 +22,7 @@ public class WeatherSpringBatchApplication {
 
     @Bean
     ApplicationRunner applicationRunner(JobLauncher jobLauncher,
-                                        Job syncTemperatureParallelJob,
+                                        Job readFromMongoJob,
                                         TemperatureService temperatureService) {
         return args -> {
             LocalDate syncDate = temperatureService.getLatestDateTemperature().getDate();
@@ -30,7 +30,7 @@ public class WeatherSpringBatchApplication {
                     .addLocalDate("syncStartDate", syncDate)
                     .addLong("startedAt", System.currentTimeMillis())
                     .toJobParameters();
-            jobLauncher.run(syncTemperatureParallelJob, jobParameters);
+            jobLauncher.run(readFromMongoJob, jobParameters);
         };
     }
 }
