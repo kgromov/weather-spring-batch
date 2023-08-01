@@ -13,7 +13,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
 import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
@@ -79,8 +78,12 @@ public class FromMongoToJdbcBatchConfig {
     public JdbcBatchItemWriter<DailyTemperature> jdbcBatchItemWriter() {
         return new JdbcBatchItemWriterBuilder<DailyTemperature>()
                 .dataSource(dataSource)
-                .sql("insert into DayTemperature_batch(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature) " +
-                        "values (:date, :morningTemperature, :afternoonTemperature, :eveningTemperature, :nightTemperature)")
+                .sql(
+                        """
+                            insert into DayTemperature(date, morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
+                            values (:date, :morningTemperature, :afternoonTemperature, :eveningTemperature, :nightTemperature)
+                        """
+                )
                 .beanMapped()
                 .build();
     }
@@ -111,7 +114,6 @@ public class FromMongoToJdbcBatchConfig {
     public Job readFromMongoJob(Step readFromMongoStep, JobRepository jobRepository) {
         return new JobBuilder("read-from-mongo-job", jobRepository)
                 .start(readFromMongoStep)
-                .build();
     }
 
     private static class ReadFromMongoProcessor implements ItemProcessor<DailyTemperatureDocument, DailyTemperature> {
