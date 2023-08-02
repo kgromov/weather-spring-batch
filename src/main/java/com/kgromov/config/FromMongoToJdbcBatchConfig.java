@@ -1,9 +1,11 @@
 package com.kgromov.config;
 
+import com.kgromov.batch.TemperatureWriter;
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.domain.DailyTemperatureDocument;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -12,7 +14,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
 import org.springframework.batch.integration.async.AsyncItemWriter;
-import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.*;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
@@ -28,6 +30,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
 
@@ -37,6 +40,7 @@ import static org.springframework.data.domain.Sort.Direction.ASC;
 public class FromMongoToJdbcBatchConfig {
     private final DataSource dataSource;
     private final @Qualifier("stepExecutor") TaskExecutor taskExecutor;
+    private final TemperatureWriter temperatureWriter;
 
     @Bean
     public MongoItemReader<DailyTemperatureDocument> mongoItemReader(MongoTemplate mongoTemplate) {
@@ -91,6 +95,7 @@ public class FromMongoToJdbcBatchConfig {
     @Bean
     public AsyncItemWriter<DailyTemperature> temperatureAsyncItemWriter() {
         AsyncItemWriter<DailyTemperature> asyncItemWriter = new AsyncItemWriter<>();
+//        asyncItemWriter.setDelegate(temperatureWriter);
         asyncItemWriter.setDelegate(jdbcBatchItemWriter());
         return asyncItemWriter;
     }
@@ -114,12 +119,18 @@ public class FromMongoToJdbcBatchConfig {
     public Job readFromMongoJob(Step readFromMongoStep, JobRepository jobRepository) {
         return new JobBuilder("read-from-mongo-job", jobRepository)
                 .start(readFromMongoStep)
+                .build();
     }
 
+    @Slf4j
     private static class ReadFromMongoProcessor implements ItemProcessor<DailyTemperatureDocument, DailyTemperature> {
+        private final AtomicInteger processedItems = new AtomicInteger();
 
         @Override
         public DailyTemperature process(DailyTemperatureDocument document) {
+            if (processedItems.getAndIncrement() % 100 == 0) {
+                log.info("{}: processed {} items", Thread.currentThread(), processedItems.get());
+            }
             return DailyTemperature.builder()
                     .date(document.getDate().minusDays(1))          // due to Mongo timezone diff
                     .morningTemperature(document.getMorningTemperature())
@@ -127,6 +138,19 @@ public class FromMongoToJdbcBatchConfig {
                     .eveningTemperature(document.getEveningTemperature())
                     .nightTemperature(document.getNightTemperature())
                     .build();
+        }
+    }
+
+    @Slf4j
+    @RequiredArgsConstructor
+    private static class MongoReader implements ItemReader<DailyTemperatureDocument> {
+
+        private final MongoItemReader<DailyTemperatureDocument> delegate;
+
+        @Override
+        public DailyTemperatureDocument read() throws Exception {
+            log.info("Read data: thread = {}", Thread.currentThread().getName());
+            return delegate.read();
         }
     }
 }
