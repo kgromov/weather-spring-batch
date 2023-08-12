@@ -1,6 +1,7 @@
 package com.kgromov.config;
 
-import com.kgromov.batch.TemperatureReader;
+import com.kgromov.batch.MongoSyncDatesReaderTasklet;
+import com.kgromov.batch.TemperatureDatesReader;
 import com.kgromov.batch.WriteToMongoProcessor;
 import com.kgromov.domain.DailyTemperatureDocument;
 import com.kgromov.dtos.DailyTemperatureDto;
@@ -13,20 +14,20 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.MongoItemWriter;
-import org.springframework.batch.item.data.builder.MongoItemWriterBuilder;
+import org.springframework.batch.item.data.builder.MongoItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.LocalDate;
+import java.util.Map;
 
 import static com.kgromov.domain.City.ODESSA;
+import static org.springframework.data.domain.Sort.Direction.ASC;
 
 @Configuration
 @Slf4j
@@ -34,60 +35,69 @@ import static com.kgromov.domain.City.ODESSA;
 public class SyncTemperatureBatchConfig {
     private final TemperatureExtractor temperatureExtractor;
 
-    /* sync dates temperature step
-     * reader       - fetch data to sync from source db
-     * processor    - convert from Dto to Document
-     * write        - write to target db (Mongo)
-     */
     @Bean
     @StepScope
-    public TemperatureReader temperatureReader(@Value("#{jobParameters[syncStartDate]}") LocalDate syncStartDate) {
-        return TemperatureReader.builder()
-                .temperatureExtractor(temperatureExtractor)
-                .city(ODESSA)
-                .startDate(syncStartDate.plusDays(1))
-                .build();
-    }
-    @Bean
-    public WriteToMongoProcessor toMongoProcessor() {
-        return new WriteToMongoProcessor();
-    }
-
-    @Bean
-    public MongoItemWriter<DailyTemperatureDocument> mongoItemWriter(MongoTemplate mongoTemplate) {
-        return new MongoItemWriterBuilder<DailyTemperatureDocument>()
-                .collection("weather_archive")
+    public MongoItemReader<DailyTemperatureDocument> syncDatesReader(MongoTemplate mongoTemplate) {
+        return new MongoItemReaderBuilder<DailyTemperatureDocument>()
+                .name("mongo-dates-to-sync-reader")
                 .template(mongoTemplate)
+                .collection("weather_archive")
+                .jsonQuery("{}")
+                .fields("{'date': 1, '_id': 0}")
+                .sorts(Map.of("date", ASC))
+                .targetType(DailyTemperatureDocument.class)
+                .pageSize(1000)
+                .build();
+    }
+
+   /* @Bean
+    public MongoSyncDatesReaderTasklet syncDatesReaderTasklet(MongoItemReader<DailyTemperatureDocument> syncDatesReader) {
+        return new MongoSyncDatesReaderTasklet(syncDatesReader);
+    }*/
+
+    @Bean
+    public MongoSyncDatesReaderTasklet syncDatesReaderTasklet() {
+        return new MongoSyncDatesReaderTasklet(syncDatesReader(null));
+    }
+
+    @Bean
+    public Step readDatesToSyncStep(MongoSyncDatesReaderTasklet syncDatesReaderTasklet,
+                                    JobRepository jobRepository,
+                                    PlatformTransactionManager transactionManage) {
+        return new StepBuilder("read-dates-to-sync-step", jobRepository)
+                .tasklet(syncDatesReaderTasklet, transactionManage)
                 .build();
     }
 
     @Bean
-    public Step syncTemperatureStep(TemperatureReader temperatureReader,
-                                 MongoItemWriter<DailyTemperatureDocument> mongoItemWriter,
-                                 JobRepository jobRepository,
-                                 PlatformTransactionManager transactionManager,
-                                 @Qualifier("stepExecutor") TaskExecutor taskExecutor) {
+    @StepScope
+    public TemperatureDatesReader temperatureDatesReader() {
+        return new TemperatureDatesReader(ODESSA, temperatureExtractor);
+    }
+
+    @Bean
+    public Step writeTemperatureStep(TemperatureDatesReader temperatureDatesReader,
+                                    WriteToMongoProcessor toMongoProcessor,
+                                    MongoItemWriter<DailyTemperatureDocument> mongoItemWriter,
+                                    JobRepository jobRepository,
+                                    PlatformTransactionManager transactionManager,
+                                    @Qualifier("stepExecutor") TaskExecutor taskExecutor) {
         return new StepBuilder("sync-temperature-step", jobRepository)
                 .<DailyTemperatureDto, DailyTemperatureDocument>chunk(10, transactionManager)
-                .reader(temperatureReader)
-                .processor(toMongoProcessor())
+                .reader(temperatureDatesReader)
+                .processor(toMongoProcessor)
                 .writer(mongoItemWriter)
                 .taskExecutor(taskExecutor)
                 .build();
     }
 
     @Bean
-    public Job syncTemperatureJob(Step syncTemperatureStep,
+    public Job syncTemperatureJob(Step readDatesToSyncStep,
+                                  Step writeTemperatureStep,
                                   JobRepository jobRepository) {
         return new JobBuilder("sync-temperature-job", jobRepository)
-                .start(syncTemperatureStep)
+                .start(readDatesToSyncStep)
+                .next(writeTemperatureStep)
                 .build();
-    }
-
-    @Bean
-    public TaskExecutor stepExecutor() {
-        SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-        asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());
-        return asyncTaskExecutor;
     }
 }

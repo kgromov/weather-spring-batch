@@ -8,8 +8,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 
 import java.time.LocalDate;
@@ -24,12 +22,12 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     private City city;
     private LocalDate startDate;
     private ThreadLocal<LocalDate> currentDate = new ThreadLocal<>();
-    private LocalDate endDate = LocalDate.now();
+    private LocalDate endDate;
     private final TemperatureExtractor temperatureExtractor;
-    private AtomicLong daysOffset = new AtomicLong();
+    private final AtomicLong daysOffset = new AtomicLong();
 
     @Builder
-    private TemperatureReader(City city, LocalDate startDate, TemperatureExtractor temperatureExtractor) {
+    private TemperatureReader(City city, LocalDate startDate, LocalDate endDate, TemperatureExtractor temperatureExtractor) {
         this.city = city;
         this.startDate = startDate;
         this.temperatureExtractor = temperatureExtractor;
@@ -41,9 +39,9 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     }
 
     @Override
-    protected DailyTemperatureDto doRead() throws Exception {
+    protected DailyTemperatureDto doRead() {
         log.info("Read daily temperature");
-        if (city == null || startDate == null || endDate == null) {
+        if (city == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
             return null;
         }
         synchronized (DailyTemperatureDto.class) {
@@ -67,19 +65,13 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
         return temperature;
     }
 
-    @BeforeStep
-    public void saveStartDate(StepExecution stepExecution) {
-        log.info("Save syncStartDate = {} before step execution", startDate);
-        stepExecution.getJobExecution().getExecutionContext().put("syncStartDate", startDate);
-    }
-
     @Override
-    protected void doOpen() throws Exception {
+    protected void doOpen() {
 
     }
 
     @Override
-    protected void doClose() throws Exception {
+    protected void doClose() {
 
     }
 

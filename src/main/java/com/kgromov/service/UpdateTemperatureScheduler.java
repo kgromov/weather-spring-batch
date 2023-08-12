@@ -15,20 +15,20 @@ import java.time.LocalDate;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SyncTemperatureScheduler {
+public class UpdateTemperatureScheduler {
     private final JobLauncher jobLauncher;
     private final DailyTemperatureRepository temperatureRepository;
-    private final Job syncTemperatureJob;
+    private final Job addTemperatureJob;
 
     @Scheduled(cron = "0 5 * * * *")
     public void perform() throws Exception {
-        log.info("Schedule sync temperature job ...");
+        log.info("Schedule add temperature job ...");
         LocalDate syncDate = temperatureRepository.getLatestDateTemperature();
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("syncStartDate", syncDate)
                 .addLong("startedAt", System.currentTimeMillis())
                 .toJobParameters();
-        jobLauncher.run(syncTemperatureJob, jobParameters);
-        log.info("Finish sync temperature job ...");
+        jobLauncher.run(addTemperatureJob, jobParameters);
+        log.info("Finish add temperature job ...");
     }
 }
