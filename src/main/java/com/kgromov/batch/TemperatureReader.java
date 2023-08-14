@@ -30,6 +30,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     private TemperatureReader(City city, LocalDate startDate, LocalDate endDate, TemperatureExtractor temperatureExtractor) {
         this.city = city;
         this.startDate = startDate;
+        this.endDate = endDate;
         this.temperatureExtractor = temperatureExtractor;
     }
 

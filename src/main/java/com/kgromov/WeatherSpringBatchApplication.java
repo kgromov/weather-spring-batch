@@ -10,9 +10,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.shell.command.annotation.CommandScan;
+import org.springframework.shell.command.annotation.EnableCommand;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableCommand
+@CommandScan
 @Log4j2
 public class WeatherSpringBatchApplication {
 
@@ -20,7 +24,7 @@ public class WeatherSpringBatchApplication {
         SpringApplication.run(WeatherSpringBatchApplication.class, args);
     }
 
-    @Bean
+//    @Bean
     ApplicationRunner applicationRunner(JobLauncher jobLauncher, Job syncTemperatureJob) {
         return args -> {
             log.info("Schedule sync temperature job ...");

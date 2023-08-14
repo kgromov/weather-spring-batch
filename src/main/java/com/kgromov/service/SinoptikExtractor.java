@@ -47,7 +47,7 @@ public class SinoptikExtractor implements TemperatureExtractor {
             Element weatherTable = document.selectFirst("table.weatherDetails");
             Elements timeCells = weatherTable.select("tbody>tr.gray.time>td");
             Elements temperatureCells = weatherTable.select("tbody>tr.temperature>td");
-
+            // TODO: if all dates 0 - fallback to average date - another UI element
             List<WeatherMeasurementDto> dailyMeasurements = IntStream.range(0, timeCells.size()).boxed()
                     .map(index -> Pair.of(timeCells.get(index), temperatureCells.get(index)))
                     .map(data -> mapToWeatherMeasurementDto(data.getFirst(), data.getSecond()))

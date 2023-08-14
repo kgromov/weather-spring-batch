@@ -12,23 +12,23 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
-@Service
+//@Service
 @Slf4j
 @RequiredArgsConstructor
 public class UpdateTemperatureScheduler {
     private final JobLauncher jobLauncher;
     private final DailyTemperatureRepository temperatureRepository;
-    private final Job addTemperatureJob;
+    private final Job populateTemperatureJob;
 
     @Scheduled(cron = "0 5 * * * *")
     public void perform() throws Exception {
         log.info("Schedule add temperature job ...");
         LocalDate syncDate = temperatureRepository.getLatestDateTemperature();
         JobParameters jobParameters = new JobParametersBuilder()
-                .addLocalDate("syncStartDate", syncDate)
+                .addLocalDate("startDate", syncDate)
                 .addLong("startedAt", System.currentTimeMillis())
                 .toJobParameters();
-        jobLauncher.run(addTemperatureJob, jobParameters);
+        jobLauncher.run(populateTemperatureJob, jobParameters);
         log.info("Finish add temperature job ...");
     }
 }

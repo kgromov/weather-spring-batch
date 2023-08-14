@@ -4,6 +4,7 @@ import com.kgromov.batch.TemperatureReader;
 import com.kgromov.batch.WriteToMongoProcessor;
 import com.kgromov.domain.DailyTemperatureDocument;
 import com.kgromov.dtos.DailyTemperatureDto;
+import com.kgromov.repository.DailyTemperatureRepository;
 import com.kgromov.service.TemperatureExtractor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +26,16 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static com.kgromov.domain.City.ODESSA;
 
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-public class UpdateTemperatureBatchConfig {
+public class PopulateTemperatureBatchConfig {
     private final TemperatureExtractor temperatureExtractor;
+    private final DailyTemperatureRepository temperatureRepository;
 
     /* sync dates temperature step
      * reader       - fetch data to sync from source db
@@ -41,12 +44,16 @@ public class UpdateTemperatureBatchConfig {
      */
     @Bean
     @StepScope
-    public TemperatureReader temperatureReader(@Value("#{jobParameters[syncStartDate]}") LocalDate syncStartDate) {
+    public TemperatureReader temperatureReader(@Value("#{jobParameters[startDate]}") LocalDate syncStartDate,
+                                               @Value("#{jobParameters[endDate]}") LocalDate syncEndDate) {
+        LocalDate startDate = Optional.ofNullable(syncStartDate)
+                .orElseGet(() -> temperatureRepository.getLatestDateTemperature().plusDays(1));
+        LocalDate endDate = Optional.ofNullable(syncEndDate).orElseGet(LocalDate::now);
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)
-                .startDate(syncStartDate.plusDays(1))
-                .endDate(LocalDate.now())
+                .startDate(startDate)
+                .endDate(endDate)
                 .build();
     }
 
@@ -79,8 +86,8 @@ public class UpdateTemperatureBatchConfig {
     }
 
     @Bean
-    public Job addTemperatureJob(Step addTemperatureStep,
-                                 JobRepository jobRepository) {
+    public Job populateTemperatureJob(Step addTemperatureStep,
+                                      JobRepository jobRepository) {
         return new JobBuilder("sync-temperature-job", jobRepository)
                 .start(addTemperatureStep)
                 .build();
