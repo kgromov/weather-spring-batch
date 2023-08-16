@@ -47,7 +47,7 @@ public class PopulateTemperatureBatchConfig {
     public TemperatureReader temperatureReader(@Value("#{jobParameters[startDate]}") LocalDate syncStartDate,
                                                @Value("#{jobParameters[endDate]}") LocalDate syncEndDate) {
         LocalDate startDate = Optional.ofNullable(syncStartDate)
-                .orElseGet(() -> temperatureRepository.getLatestDateTemperature().plusDays(1));
+                .orElseGet(temperatureRepository::getLatestDateTemperature);
         LocalDate endDate = Optional.ofNullable(syncEndDate).orElseGet(LocalDate::now);
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)

@@ -42,7 +42,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     @Override
     protected DailyTemperatureDto doRead() {
         log.info("Read daily temperature");
-        if (city == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+        if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return null;
         }
         synchronized (DailyTemperatureDto.class) {
