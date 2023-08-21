@@ -27,6 +27,7 @@ public class TemperatureCommands {
     private final JobLauncher jobLauncher;
     private final Job syncTemperatureJob;
     private final Job populateTemperatureJob;
+    private final Job correlateMeasurementsJob;
 
     @Command(command = {"add"},
             description = """
@@ -60,15 +61,31 @@ public class TemperatureCommands {
         log.info("Finish sync temperature job ...");
     }
 
+    @Command(command = {"correlate"},
+            description = """
+                       Update measurements date with time as midnight.
+                       Find and remove duplicated dates measurement.
+                    """
+    )
+    public void correlateTemperatures(@Option(longNames = {"from"}, shortNames = {'f'}, description = "Correlate data from") String from,
+                                     @Option(longNames = {"to"}, shortNames = {'t'}, description = "Correlate data to") String to) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+        log.info("Schedule correlation temperature job ...");
+        var jobParameters = new JobParametersBuilder()
+                .addLong("startedAt", System.currentTimeMillis());
+        this.addDateJobParameters(jobParameters, from, to);
+        jobLauncher.run(correlateMeasurementsJob, jobParameters.toJobParameters());
+        log.info("Finish sync correlation job ...");
+    }
+
     // TODO: add CommandHandlingResult
     private void validateDateOptions(String from, String to) {
         LocalDate startDate = null;
         LocalDate endDate = null;
         if (nonNull(from)) {
-            startDate  = LocalDate.parse(from);
+            startDate = LocalDate.parse(from);
         }
         if (nonNull(to)) {
-            endDate  = LocalDate.parse(to);
+            endDate = LocalDate.parse(to);
         }
         if (nonNull(startDate) && (nonNull(endDate)) && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Invalid dates range - [" + from + '-' + to + "]");

@@ -23,12 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/*
- * TODO:
- * 1) update dates for start of the day;
- * 2) remove duplicates
- * Add tasklet steps based on repository? At least better to replace insert to upsert
- */
+// TODO: convert correlateTimeStep to chunk step with concurrent execution
+// removeDuplicatesStep can be either tasklet with concurrency or split into 2 steps - 1 find duplicates, 2 - write to db
 @Configuration
 @Slf4j
 @RequiredArgsConstructor

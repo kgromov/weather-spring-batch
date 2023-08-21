@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
-//@Service
+@Service
 @Slf4j
 @RequiredArgsConstructor
 public class UpdateTemperatureScheduler {
@@ -25,7 +25,7 @@ public class UpdateTemperatureScheduler {
         log.info("Schedule add temperature job ...");
         LocalDate syncDate = temperatureRepository.getLatestDateTemperature();
         JobParameters jobParameters = new JobParametersBuilder()
-                .addLocalDate("startDate", syncDate)
+                .addLocalDate("startDate", syncDate.plusDays(1))
                 .addLong("startedAt", System.currentTimeMillis())
                 .toJobParameters();
         jobLauncher.run(populateTemperatureJob, jobParameters);
