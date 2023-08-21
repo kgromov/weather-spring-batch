@@ -72,7 +72,7 @@ public class TemperatureDatesReader extends AbstractItemCountingItemStreamItemRe
 
     private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
         return DailyTemperatureDto.builder()
-                .date(measurementsDto.getDate())
+                .date(measurementsDto.getDate().atStartOfDay())
                 .morningTemperature(measurementsDto.getMorningTemperature())
                 .afternoonTemperature(measurementsDto.getAfternoonTemperature())
                 .eveningTemperature(measurementsDto.getEveningTemperature())

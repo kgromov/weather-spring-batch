@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Document(collection = "weather_archive")
 @Data
@@ -16,7 +17,7 @@ import java.time.LocalDate;
 public class DailyTemperatureDocument {
     @Id
     private ObjectId _id;
-    private LocalDate date;
+    private LocalDateTime date;
     private Double morningTemperature;
     private Double afternoonTemperature;
     private Double eveningTemperature;

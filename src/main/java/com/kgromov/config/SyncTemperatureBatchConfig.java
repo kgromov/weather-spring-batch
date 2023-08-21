@@ -52,11 +52,12 @@ public class SyncTemperatureBatchConfig {
         String endSyncDate = Optional.ofNullable(syncEndDate)
                 .orElseGet(LocalDate::now)
                 .format(DateTimeFormatter.ISO_DATE);
+        log.info("Sync temperature in range = [{} - {}]", startSyncDate, endSyncDate);
         return new MongoItemReaderBuilder<DailyTemperatureDocument>()
                 .name("mongo-dates-to-sync-reader")
                 .template(mongoTemplate)
                 .collection("weather_archive")
-                .jsonQuery("{date: {$gte: ISODate('" + startSyncDate + "'), $lte: ISODate('" + endSyncDate + "')}")
+                .jsonQuery("{date: {$gte: ISODate('" + startSyncDate + "'), $lte: ISODate('" + endSyncDate + "')}}")
                 .fields("{'date': 1, '_id': 0}")
                 .sorts(Map.of("date", ASC))
                 .targetType(DailyTemperatureDocument.class)
