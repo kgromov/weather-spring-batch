@@ -11,6 +11,10 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.shell.command.CommandExceptionResolver;
+import org.springframework.shell.command.CommandHandlingResult;
 import org.springframework.shell.command.annotation.Command;
 import org.springframework.shell.command.annotation.Option;
 import org.springframework.shell.standard.ShellMethod;
@@ -77,7 +81,12 @@ public class TemperatureCommands {
         log.info("Finish sync correlation job ...");
     }
 
-    // TODO: add CommandHandlingResult
+    @Bean
+    @Qualifier("customExceptionResolver")
+    CommandExceptionResolver customExceptionResolver() {
+        return ex -> CommandHandlingResult.of("Incorrect command format:\n" + ex.getMessage(), 1);
+    }
+
     private void validateDateOptions(String from, String to) {
         LocalDate startDate = null;
         LocalDate endDate = null;
@@ -93,6 +102,7 @@ public class TemperatureCommands {
     }
 
     private void addDateJobParameters(JobParametersBuilder builder, String from, String to) {
+        this.validateDateOptions(from, to);
         if (nonNull(from)) {
             builder.addLocalDate("startDate", LocalDate.parse(from));
         }
