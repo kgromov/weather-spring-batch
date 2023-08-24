@@ -5,7 +5,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDate;
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Document(collection = "weather_archive")
@@ -14,7 +15,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(of = {"_id", "date"})
 @Builder
-public class DailyTemperatureDocument {
+public class DailyTemperatureDocument implements Serializable {
+    @Serial
+    private static final long serialVersionUID = -5976257794245662775L;
     @Id
     private ObjectId _id;
     private LocalDateTime date;

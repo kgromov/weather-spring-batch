@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -43,7 +42,8 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     protected DailyTemperatureDto doRead() {
-        log.info("Read daily temperature");
+        String threadName = Thread.currentThread().getName();
+        log.info("Thread {}: Read daily temperature", threadName);
         if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return null;
         }
@@ -61,7 +61,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
             temperature = temperatureExtractor.getTemperatureAt(city, currentDate).map(this::mapToDto)
                     .orElseThrow(getRuntimeExceptionSupplier(currentDate));
             log.info("Thread {}: currentItemCount = {}, daysOffset = {}, currentDate = {}, startDate = {}",
-                    Thread.currentThread().getName(), getCurrentItemCount(), daysOffset, currentDate.format(ISO_DATE), startDate.format(ISO_DATE));
+                    threadName, getCurrentItemCount(), daysOffset, currentDate.format(ISO_DATE), startDate.format(ISO_DATE));
         } catch (Exception e) {
             throw getRuntimeExceptionSupplier(currentDate.get(), e).get();
         }

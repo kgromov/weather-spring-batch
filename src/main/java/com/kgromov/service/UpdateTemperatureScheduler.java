@@ -20,7 +20,7 @@ public class UpdateTemperatureScheduler {
     private final DailyTemperatureRepository temperatureRepository;
     private final Job populateTemperatureJob;
 
-    @Scheduled(cron = "0 5 * * * *")
+    @Scheduled(cron = "0 5 0 * * *")
     public void perform() throws Exception {
         log.info("Schedule add temperature job ...");
         LocalDate syncDate = temperatureRepository.getLatestDateTemperature();

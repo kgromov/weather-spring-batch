@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
@@ -95,8 +96,10 @@ public class PopulateTemperatureBatchConfig {
 
     @Bean
     public TaskExecutor stepExecutor() {
-        SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
-        asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());
-        return asyncTaskExecutor;
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        int processors = Runtime.getRuntime().availableProcessors() - 1;
+        taskExecutor.setCorePoolSize(processors / 2);
+        taskExecutor.setMaxPoolSize(processors);
+        return taskExecutor;
     }
 }

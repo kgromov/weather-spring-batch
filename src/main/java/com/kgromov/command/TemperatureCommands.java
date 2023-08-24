@@ -41,7 +41,7 @@ public class TemperatureCommands {
     )
     public void addDailyTemperatures(@Option(longNames = {"from"}, shortNames = {'f'}, description = "Populate data from") String from,
                                      @Option(longNames = {"to"}, shortNames = {'t'}, description = "Populate data to") String to) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
-        log.info("Schedule populate temperature job ...");
+        log.info("Start populate temperature job ...");
         var jobParameters = new JobParametersBuilder()
                 .addLong("startedAt", System.currentTimeMillis());
         this.addDateJobParameters(jobParameters, from, to);
@@ -57,7 +57,7 @@ public class TemperatureCommands {
     )
     public void syncTemperatures(@Option(longNames = {"from"}, shortNames = {'f'}, description = "Populate data from") String from,
                                  @Option(longNames = {"to"}, shortNames = {'t'}, description = "Populate data to") String to) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
-        log.info("Schedule sync temperature job ...");
+        log.info("Start sync temperature job ...");
         var jobParameters = new JobParametersBuilder()
                 .addLong("startedAt", System.currentTimeMillis());
         this.addDateJobParameters(jobParameters, from, to);
@@ -73,7 +73,7 @@ public class TemperatureCommands {
     )
     public void correlateTemperatures(@Option(longNames = {"from"}, shortNames = {'f'}, description = "Correlate data from") String from,
                                      @Option(longNames = {"to"}, shortNames = {'t'}, description = "Correlate data to") String to) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
-        log.info("Schedule correlation temperature job ...");
+        log.info("Start correlation temperature job ...");
         var jobParameters = new JobParametersBuilder()
                 .addLong("startedAt", System.currentTimeMillis());
         this.addDateJobParameters(jobParameters, from, to);
