@@ -3,6 +3,7 @@ package com.kgromov.dtos;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 public class DailyTemperatureDto {
     private Long id;
-    private LocalDate date;
+    private LocalDateTime date;
     private Double morningTemperature;
     private Double afternoonTemperature;
     private Double eveningTemperature;

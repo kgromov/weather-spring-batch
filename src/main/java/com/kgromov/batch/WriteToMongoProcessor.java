@@ -11,7 +11,7 @@ public class WriteToMongoProcessor implements ItemProcessor<DailyTemperatureDto,
     @Override
     public DailyTemperatureDocument process(DailyTemperatureDto dto) {
         return DailyTemperatureDocument.builder()
-                .date(dto.getDate().plusDays(1))             // due to Mongo timezone diff
+                .date(dto.getDate())
                 .morningTemperature(dto.getMorningTemperature())
                 .afternoonTemperature(dto.getAfternoonTemperature())
                 .eveningTemperature(dto.getEveningTemperature())

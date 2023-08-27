@@ -21,15 +21,17 @@ import static java.time.format.DateTimeFormatter.ISO_DATE;
 public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<DailyTemperatureDto> {
     private City city;
     private LocalDate startDate;
-    private ThreadLocal<LocalDate> currentDate = new ThreadLocal<>();
     private LocalDate endDate;
+
     private final TemperatureExtractor temperatureExtractor;
+    private final ThreadLocal<LocalDate> currentDate = new ThreadLocal<>();
     private final AtomicLong daysOffset = new AtomicLong();
 
     @Builder
     private TemperatureReader(City city, LocalDate startDate, LocalDate endDate, TemperatureExtractor temperatureExtractor) {
         this.city = city;
         this.startDate = startDate;
+        this.endDate = endDate;
         this.temperatureExtractor = temperatureExtractor;
     }
 
@@ -40,8 +42,9 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     @Override
     protected DailyTemperatureDto doRead() {
-        log.info("Read daily temperature");
-        if (city == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+        String threadName = Thread.currentThread().getName();
+        log.info("Thread {}: Read daily temperature", threadName);
+        if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return null;
         }
         synchronized (DailyTemperatureDto.class) {
@@ -58,7 +61,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
             temperature = temperatureExtractor.getTemperatureAt(city, currentDate).map(this::mapToDto)
                     .orElseThrow(getRuntimeExceptionSupplier(currentDate));
             log.info("Thread {}: currentItemCount = {}, daysOffset = {}, currentDate = {}, startDate = {}",
-                    Thread.currentThread().getName(), getCurrentItemCount(), daysOffset, currentDate.format(ISO_DATE), startDate.format(ISO_DATE));
+                    threadName, getCurrentItemCount(), daysOffset, currentDate.format(ISO_DATE), startDate.format(ISO_DATE));
         } catch (Exception e) {
             throw getRuntimeExceptionSupplier(currentDate.get(), e).get();
         }
@@ -85,7 +88,8 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
         return DailyTemperatureDto.builder()
-                .date(measurementsDto.getDate())
+//                .date(measurementsDto.getDate().atStartOfDay().atZone(ZoneId.of("America/Virgin")).toLocalDateTime())
+                .date(measurementsDto.getDate().atStartOfDay())
                 .morningTemperature(measurementsDto.getMorningTemperature())
                 .afternoonTemperature(measurementsDto.getAfternoonTemperature())
                 .eveningTemperature(measurementsDto.getEveningTemperature())

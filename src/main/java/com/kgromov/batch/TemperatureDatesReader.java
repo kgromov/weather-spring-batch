@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
 import java.util.Queue;
@@ -47,7 +48,7 @@ public class TemperatureDatesReader extends AbstractItemCountingItemStreamItemRe
     @Override
     protected DailyTemperatureDto doRead() {
         log.info("Read daily temperature");
-        if (datesQueue.isEmpty()) {
+        if (CollectionUtils.isEmpty(datesQueue)) {
             return null;
         }
         LocalDate currentDate = datesQueue.poll();
@@ -72,7 +73,7 @@ public class TemperatureDatesReader extends AbstractItemCountingItemStreamItemRe
 
     private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
         return DailyTemperatureDto.builder()
-                .date(measurementsDto.getDate())
+                .date(measurementsDto.getDate().atStartOfDay())
                 .morningTemperature(measurementsDto.getMorningTemperature())
                 .afternoonTemperature(measurementsDto.getAfternoonTemperature())
                 .eveningTemperature(measurementsDto.getEveningTemperature())

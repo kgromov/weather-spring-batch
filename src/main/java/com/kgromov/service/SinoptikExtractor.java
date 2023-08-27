@@ -47,12 +47,14 @@ public class SinoptikExtractor implements TemperatureExtractor {
             Element weatherTable = document.selectFirst("table.weatherDetails");
             Elements timeCells = weatherTable.select("tbody>tr.gray.time>td");
             Elements temperatureCells = weatherTable.select("tbody>tr.temperature>td");
-
             List<WeatherMeasurementDto> dailyMeasurements = IntStream.range(0, timeCells.size()).boxed()
                     .map(index -> Pair.of(timeCells.get(index), temperatureCells.get(index)))
                     .map(data -> mapToWeatherMeasurementDto(data.getFirst(), data.getSecond()))
                     .collect(Collectors.toList());
-
+            // if no time-based measurements - fallback to min-max
+            if (dailyMeasurements.isEmpty()) {
+                dailyMeasurements = this.fallbackMeasurements(document);
+            }
             TemperatureMeasurementsDto temperatureMeasurementsDto = new TemperatureMeasurementsDto();
             temperatureMeasurementsDto.setDate(measurementDate);
             temperatureMeasurementsDto.setDailyMeasurements(dailyMeasurements);
@@ -67,11 +69,29 @@ public class SinoptikExtractor implements TemperatureExtractor {
         }
     }
 
-    private static WeatherMeasurementDto mapToWeatherMeasurementDto(Element timeElement,Element tempElement){
+    private static WeatherMeasurementDto mapToWeatherMeasurementDto(Element timeElement, Element tempElement) {
         String time = timeElement.text().trim();
         String temperature = tempElement.text().trim();
         LocalTime parsedTime = LocalTime.parse(time, TIME_FORMATTER);
         int parsedTemp = Integer.parseInt(temperature.substring(0, temperature.length() - 1));
         return new WeatherMeasurementDto(parsedTime, parsedTemp);
+    }
+
+    private List<WeatherMeasurementDto> fallbackMeasurements(Document document) {
+        Element minTemperatureElement = document.selectFirst(".temperature>.min>span");
+        Element maxTemperatureElement = document.selectFirst(".temperature>.max>span");
+        int minTemperature = parseTemperature(minTemperatureElement);
+        int maxTemperature = parseTemperature(maxTemperatureElement);
+        return List.of(
+                new WeatherMeasurementDto(LocalTime.MIDNIGHT.plusHours(3), minTemperature),
+                new WeatherMeasurementDto(LocalTime.MIDNIGHT.plusHours(9), minTemperature),
+                new WeatherMeasurementDto(LocalTime.MIDNIGHT.plusHours(15), maxTemperature),
+                new WeatherMeasurementDto(LocalTime.MIDNIGHT.plusHours(21), maxTemperature)
+        );
+    }
+
+    private static int parseTemperature(Element element) {
+        String temperature = element.text().trim();
+        return Integer.parseInt(temperature.substring(0, temperature.length() - 1));
     }
 }

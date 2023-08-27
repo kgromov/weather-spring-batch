@@ -14,6 +14,7 @@ import org.springframework.util.StopWatch;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public class MongoSyncDatesReaderTasklet implements Tasklet, StepExecutionListen
         DailyTemperatureDocument row;
         LocalDate startRangeDate = null;
         while ((row = delegate.read()) != null) {
-            LocalDate currentDate = row.getDate();
+            LocalDate currentDate = row.getDate().toLocalDate();
             if (startRangeDate == null) {
                 startRangeDate = currentDate;
             }
