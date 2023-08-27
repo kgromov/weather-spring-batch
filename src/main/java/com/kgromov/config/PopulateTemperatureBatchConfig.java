@@ -20,16 +20,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static com.kgromov.domain.City.ODESSA;
+import static java.time.format.DateTimeFormatter.ISO_DATE;
 
 @Configuration
 @Slf4j
@@ -49,7 +50,8 @@ public class PopulateTemperatureBatchConfig {
                                                @Value("#{jobParameters[endDate]}") LocalDate syncEndDate) {
         LocalDate startDate = Optional.ofNullable(syncStartDate)
                 .orElseGet(() -> temperatureRepository.getLatestDateTemperature().plusDays(1));
-        LocalDate endDate = Optional.ofNullable(syncEndDate).orElseGet(LocalDate::now);
+        LocalDate endDate = Optional.ofNullable(syncEndDate).orElseGet(() -> LocalDate.now(ZoneId.of("UTC")));
+        log.debug("Dates to fetch temperature: [{}; {}]", startDate.format(ISO_DATE), endDate.format(ISO_DATE));
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)
