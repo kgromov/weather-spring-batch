@@ -21,14 +21,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.util.Pair;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.Month;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -108,7 +107,7 @@ public class CorrelateDatesBatchConfig {
                                 DailyTemperatureDocument prevTemp = temperatures.get(i);
                                 DailyTemperatureDocument nextTemp = temperatures.get(i + 1);
                                 if (prevTemp.getDate().getHour() != 0) {
-                                  notCorrelatedItems++;
+                                    notCorrelatedItems++;
                                 }
                                 if (prevTemp.getDate().toLocalDate().isEqual(nextTemp.getDate().toLocalDate())) {
                                     if (isAllMeasurementsZero(prevTemp)) {
@@ -126,6 +125,58 @@ public class CorrelateDatesBatchConfig {
                             List<LocalDate> duplicatedDates = duplicates.stream().map(DailyTemperatureDocument::getDate).map(LocalDateTime::toLocalDate).distinct().sorted().toList();
                             log.info("Duplicates size = {} on dates = {}", duplicates.size(), duplicatedDates);
                             log.info("Finish saving duplicates step");
+                            return RepeatStatus.FINISHED;
+                        },
+                        transactionManager)
+                .build();
+    }
+
+    private enum Season {
+        WINTER, SPRING, SUMMER, AUTUMN;
+
+        public static Season from(LocalDateTime date) {
+            return switch (Month.from(date)) {
+                case JANUARY, FEBRUARY, DECEMBER -> WINTER;
+                case MARCH, APRIL, MAY -> SPRING;
+                case JUNE, JULY, AUGUST -> SUMMER;
+                case SEPTEMBER, OCTOBER, NOVEMBER -> AUTUMN;
+            };
+        }
+    }
+
+    private Map<Season, Pair<Integer, Integer>> seasonRanges = Map.of(
+            Season.WINTER, Pair.of(-30, 12),
+            Season.SPRING, Pair.of(-10, 29),
+            Season.SUMMER, Pair.of(10, 40),
+            Season.AUTUMN, Pair.of(-5, 29)
+    );
+
+    private boolean isTemperatureOutOfSeasonBoundaries(DailyTemperatureDocument dailyTemperature) {
+        var temperatureBoundaries = seasonRanges.get(Season.from(dailyTemperature.getDate()));
+        return dailyTemperature.getMin().compareTo(temperatureBoundaries.getFirst().doubleValue())  < 0
+                || dailyTemperature.getMax().compareTo(temperatureBoundaries.getSecond().doubleValue()) > 0;
+    }
+
+    @Bean
+    public Step findCrapDataStep() {
+        return new StepBuilder("find-crap-data-step", jobRepository)
+                .tasklet((contribution, chunkContext) -> {
+                            log.info("Start searching for crap data");
+                            List<DailyTemperatureDocument> temperatures = temperatureRepository.findAll(Sort.by(Sort.Direction.ASC, "date"));
+                            List<DailyTemperatureDocument> crapData = temperatures.stream()
+                                    .filter(this::isTemperatureOutOfSeasonBoundaries)
+                                    .toList();
+                            Set<LocalDate> dates = crapData.stream()
+                                    .map(DailyTemperatureDocument::getDate)
+                                    .map(LocalDateTime::toLocalDate)
+                                    .collect(Collectors.toCollection(TreeSet::new));
+                            String details = crapData.stream().collect(Collectors.groupingBy(d -> Season.from(d.getDate())))
+                                     .entrySet()
+                                     .stream()
+                                     .map(entry -> entry.getValue().stream().map(DailyTemperatureDocument::toString).collect(Collectors.joining( "\n", entry.getKey() + ": ", "\n")))
+                                     .collect(Collectors.joining("\n"));
+                            log.info("Crap data on dates = {}\n details = {}", dates, details);
+                            log.info("Finish searching for crap data");
                             return RepeatStatus.FINISHED;
                         },
                         transactionManager)
@@ -161,6 +212,22 @@ public class CorrelateDatesBatchConfig {
                 .start(correlateTimeChunkStep)
                 .next(saveDuplicatesStep)
                 .next(removeDuplicatesStep)
+                .build();
+    }
+
+    @Bean
+    public Job removeDuplicatesJob(Step saveDuplicatesStep,
+                                   Step removeDuplicatesStep) {
+        return new JobBuilder("correlate-measurements-job", jobRepository)
+                .start(saveDuplicatesStep)
+                .next(removeDuplicatesStep)
+                .build();
+    }
+
+    @Bean
+    public Job findCrapDataJob() {
+        return new JobBuilder("find-crap-data-job", jobRepository)
+                .start(findCrapDataStep())
                 .build();
     }
 

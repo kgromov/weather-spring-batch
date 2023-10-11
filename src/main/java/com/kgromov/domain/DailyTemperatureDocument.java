@@ -8,12 +8,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.stream.DoubleStream;
 
 @Document(collection = "weather_archive")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(of = {"_id", "date"})
+@ToString(exclude = {"_id"})
 @Builder
 public class DailyTemperatureDocument implements Serializable {
     @Serial
@@ -25,4 +27,22 @@ public class DailyTemperatureDocument implements Serializable {
     private Double afternoonTemperature;
     private Double eveningTemperature;
     private Double nightTemperature;
+
+    public Double getMax() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature,*/ nightTemperature)
+                .max()
+                .getAsDouble();
+    }
+
+    public Double getMin() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature, */nightTemperature)
+                .min()
+                .getAsDouble();
+    }
+
+    public Double getAverage() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature, */nightTemperature)
+                .average()
+                .getAsDouble();
+    }
 }
