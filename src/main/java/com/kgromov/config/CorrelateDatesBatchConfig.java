@@ -131,6 +131,7 @@ public class CorrelateDatesBatchConfig {
                 .build();
     }
 
+    // TODO: group by months; move to tasklet step class
     private enum Season {
         WINTER, SPRING, SUMMER, AUTUMN;
 

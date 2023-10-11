@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -32,6 +34,17 @@ public class TemperatureMeasurementsDto {
 
     public double getNightTemperature() {
         return getAvgTemperatureAtDayPart(NIGHT);
+    }
+
+    @Override
+    public String toString() {
+        return "TemperatureMeasurementsDto{" +
+                "date=" + date +
+                ", morning=" + BigDecimal.valueOf(this.getMorningTemperature()).setScale(2, RoundingMode.HALF_UP) +
+                ", afternoon=" + BigDecimal.valueOf(this.getAfternoonTemperature()).setScale(2, RoundingMode.HALF_UP) +
+                ", evening=" + BigDecimal.valueOf(this.getEveningTemperature()).setScale(2, RoundingMode.HALF_UP)  +
+                ", night=" + BigDecimal.valueOf(this.getNightTemperature()).setScale(2, RoundingMode.HALF_UP)  +
+                '}';
     }
 
     private double getAvgTemperatureAtDayPart(PartOfTheDay partOfTheDay) {
