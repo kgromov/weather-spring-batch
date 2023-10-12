@@ -22,6 +22,5 @@ management:
 # custom properties
 weather:
   source:
-    url: "https://ua.sinoptik.ua"
-    # as alternative - https://meteopost.com/weather/archive/
-    # request = https://meteopost.com/weather/archive/, body = d=1&m=01&y=2012&city=UKOO&arc=1
+    sinoptik-url: "https://ua.sinoptik.ua"
+    meteopost-url: " https://meteopost.com/weather/archive"

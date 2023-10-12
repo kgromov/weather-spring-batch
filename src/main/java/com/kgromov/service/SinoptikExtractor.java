@@ -1,15 +1,16 @@
 package com.kgromov.service;
 
+import com.kgromov.config.WeatherSource;
 import com.kgromov.domain.City;
 import com.kgromov.dtos.TemperatureMeasurementsDto;
 import com.kgromov.dtos.WeatherMeasurementDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -26,10 +27,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class SinoptikExtractor implements TemperatureExtractor {
-    @Value("${weather.source.url}")
-    private String weatherSourceUrl;
+    private final WeatherSource source;
+
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H :mm");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -40,7 +42,7 @@ public class SinoptikExtractor implements TemperatureExtractor {
         String dateFormatted = DATE_FORMATTER.format(measurementDate);
         try {
             String encodedCityName = URLEncoder.encode(city.getKeyWord(), StandardCharsets.UTF_8);
-            String url = weatherSourceUrl + '/' + encodedCityName + '/' + dateFormatted;
+            String url = source.sinoptikUrl() + '/' + encodedCityName + '/' + dateFormatted;
             Connection connection = Jsoup.connect(url);
             Document document = connection.get();
 

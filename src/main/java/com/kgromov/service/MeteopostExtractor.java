@@ -3,13 +3,17 @@ package com.kgromov.service;
 import com.kgromov.domain.City;
 import com.kgromov.dtos.TemperatureMeasurementsDto;
 import com.kgromov.dtos.WeatherMeasurementDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.data.util.Pair;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -23,12 +27,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-// TODO: extract common part to  default interface method;
 // sync data from Meteopost [2010-01-26; 2022-03-21]; sinoptik - [2022-03-21; now)
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class MeteopostExtractor implements TemperatureExtractor {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm");
+
+    private final RestTemplateBuilder meteopostTemplateBuilder;
 
     // last measurements for 2022-03-21 :(
     @Override
@@ -36,11 +42,8 @@ public class MeteopostExtractor implements TemperatureExtractor {
         long start = System.nanoTime();
         log.info("Collecting daily temperature for city {}, at {}", city, measurementDate);
         // TODO: add preconfigured RestTemplateBuilder as bean
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED.toString());
+        RestTemplate restTemplate = meteopostTemplateBuilder.build();
 
-        // TODO: parse from LocalDate; extend City or make interface with codes
         var requestBody = new LinkedMultiValueMap<>();
         requestBody.add("d", String.valueOf(measurementDate.getDayOfMonth()));
         requestBody.add("m", String.format("%02d", measurementDate.getMonthValue()));
@@ -48,10 +51,8 @@ public class MeteopostExtractor implements TemperatureExtractor {
         requestBody.add("city", "UKOO");
         requestBody.add("arc", "1");
 
-        var formEntity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange("https://meteopost.com/weather/archive/",
-                HttpMethod.POST, formEntity, String.class
-        );
+        var formEntity = new HttpEntity<>(requestBody);
+        ResponseEntity<String> response = restTemplate.exchange("/", HttpMethod.POST, formEntity, String.class);
         Document document = Jsoup.parse(response.getBody());
         Element weatherTable = document.getElementById("arc");
         Elements timeCells = weatherTable.select("tbody td:nth-child(1)");
@@ -74,10 +75,5 @@ public class MeteopostExtractor implements TemperatureExtractor {
         LocalTime parsedTime = LocalTime.parse(time, TIME_FORMATTER);
         int parsedTemp = Integer.parseInt(temperature.substring(0, temperature.length() - 1));
         return new WeatherMeasurementDto(parsedTime, parsedTemp);
-    }
-
-    public static void main(String[] args) {
-        Optional<TemperatureMeasurementsDto> temperatureAt = new MeteopostExtractor().getTemperatureAt(City.ODESSA, LocalDate.now().minusYears(2));
-        temperatureAt.ifPresent(temp -> log.info("Temp for today = {}", temp));
     }
 }
