@@ -2,7 +2,7 @@ package com.kgromov.service;
 
 import com.kgromov.domain.City;
 import com.kgromov.domain.DailyTemperature;
-import com.kgromov.domain.TemperatureMeasurementsDto;
+import com.kgromov.dtos.TemperatureMeasurementsDto;
 import com.kgromov.repository.DailyTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

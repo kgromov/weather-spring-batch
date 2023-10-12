@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
+import java.util.stream.DoubleStream;
 
 @Document
 @Data
@@ -21,4 +22,22 @@ public class DailyTemperatureDocument {
     private Double afternoonTemperature;
     private Double eveningTemperature;
     private Double nightTemperature;
+
+    public Double getMax() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
+                .max()
+                .getAsDouble();
+    }
+
+    public Double getMin() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
+                .min()
+                .getAsDouble();
+    }
+
+    public Double getAverage() {
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
+                .average()
+                .getAsDouble();
+    }
 }

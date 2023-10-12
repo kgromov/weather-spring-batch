@@ -60,6 +60,7 @@ public class SyncTemperatureBatchConfig {
                 .pageSize(1000)
                 .build();
     }
+
     @Bean
     public MongoSyncDatesReaderTasklet syncDatesReaderTasklet(MongoItemReader<DailyTemperatureDocument> syncDatesReader) {
         return new MongoSyncDatesReaderTasklet(syncDatesReader);
@@ -133,11 +134,21 @@ public class SyncTemperatureBatchConfig {
     }
 
     @Bean
+    public Job fromMysqlToMongo(Step readDatesToSyncStep,
+                                Step writeToMongoStep,
+                                JobRepository jobRepository) {
+        return new JobBuilder("writeToMongoJob", jobRepository)
+                .start(readDatesToSyncStep)
+                .next(writeToMongoStep)
+                .build();
+    }
+
+    @Bean
     public Job syncTemperatureParallelJob(Step fetchTemperatureStep,
-                                  Step readDatesToSyncStep,
-                                  Step writeToMongoStep,
-                                  JobRepository jobRepository,
-                                  TaskExecutor taskExecutor) {
+                                          Step readDatesToSyncStep,
+                                          Step writeToMongoStep,
+                                          JobRepository jobRepository,
+                                          TaskExecutor taskExecutor) {
         Flow fetchFlow = new FlowBuilder<Flow>("fetch-flow")
                 .start(fetchTemperatureStep)
                 .build();

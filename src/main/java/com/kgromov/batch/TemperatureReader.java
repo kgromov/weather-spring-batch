@@ -28,9 +28,10 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     private AtomicLong daysOffset = new AtomicLong();
 
     @Builder
-    private TemperatureReader(City city, LocalDate startDate, TemperatureExtractor temperatureExtractor) {
+    private TemperatureReader(City city, LocalDate startDate, LocalDate endDate, TemperatureExtractor temperatureExtractor) {
         this.city = city;
         this.startDate = startDate;
+        this.endDate = endDate;
         this.temperatureExtractor = temperatureExtractor;
     }
 
@@ -40,9 +41,9 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     }
 
     @Override
-    protected DailyTemperature doRead() throws Exception {
+    protected DailyTemperature doRead() {
         log.info("Read daily temperature");
-        if (city == null || startDate == null || endDate == null) {
+        if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return null;
         }
         synchronized (DailyTemperature.class) {

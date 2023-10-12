@@ -4,7 +4,6 @@ import com.kgromov.batch.TemperatureReader;
 import com.kgromov.batch.TemperatureWriter;
 import com.kgromov.domain.DailyTemperature;
 import com.kgromov.service.TemperatureExtractor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -20,24 +19,33 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 import static com.kgromov.domain.City.ODESSA;
 
 
 @Configuration
-@RequiredArgsConstructor
 public class FetchTemperatureBatchConfig {
     private final TemperatureWriter temperatureWriter;
     private final TemperatureExtractor temperatureExtractor;
 
+    public FetchTemperatureBatchConfig(TemperatureWriter temperatureWriter,
+                                       @Qualifier("sinoptikExtractor") TemperatureExtractor temperatureExtractor) {
+        this.temperatureWriter = temperatureWriter;
+        this.temperatureExtractor = temperatureExtractor;
+    }
+
     @Bean
     @StepScope
-    public TemperatureReader temperatureReader(@Value("#{jobParameters[syncStartDate]}") LocalDate syncStartDate) {
+    public TemperatureReader temperatureReader(@Value("#{jobParameters[syncStartDate]}") LocalDate startDate,
+                                               @Value("#{jobParameters[syncEndDate]}") LocalDate endDate) {
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
                 .city(ODESSA)
-                .startDate(syncStartDate.plusDays(1))
+                .startDate(startDate)
+                .endDate(endDate)
                 .build();
     }
 
@@ -70,5 +78,11 @@ public class FetchTemperatureBatchConfig {
         SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
         asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());
         return asyncTaskExecutor;
+    }
+
+    public static void main(String[] args) {
+        LocalDate startDate = LocalDate.parse("2010-01-26");
+        LocalDate endDate = LocalDate.parse("2022-03-21");
+        long days = ChronoUnit.DAYS.between(startDate, endDate);
     }
 }

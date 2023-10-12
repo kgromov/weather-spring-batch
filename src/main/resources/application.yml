@@ -39,7 +39,9 @@ spring:
 # custom properties
 weather:
   source:
-    url: "https://ua.sinoptik.ua"
+    sinoptik-url: "https://ua.sinoptik.ua"
+    meteopost-url: "https://meteopost.com/weather/archive"
+
 logging:
   level:
     org:

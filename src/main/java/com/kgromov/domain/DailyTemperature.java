@@ -1,12 +1,13 @@
 package com.kgromov.domain;
 
+import com.kgromov.dtos.TemperatureMeasurementsDto;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "DayTemperature")
+@Table(name = "DailyTemperature")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

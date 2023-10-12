@@ -1,7 +1,7 @@
 package com.kgromov.service;
 
 import com.kgromov.domain.City;
-import com.kgromov.domain.TemperatureMeasurementsDto;
+import com.kgromov.dtos.TemperatureMeasurementsDto;
 import lombok.SneakyThrows;
 
 import java.time.LocalDate;

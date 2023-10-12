@@ -1,4 +1,4 @@
-package com.kgromov.domain;
+package com.kgromov.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
