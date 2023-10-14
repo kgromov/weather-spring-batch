@@ -26,7 +26,7 @@ public class WriteToMongoProcessor implements ItemProcessor<DailyTemperature, Da
             return null;
         }
         return DailyTemperatureDocument.builder()
-                .date(entity.getDate().plusDays(1))             // due to Mongo timezone diff
+                .date(entity.getDate().atStartOfDay().plusDays(1))             // due to Mongo timezone diff
                 .morningTemperature(entity.getMorningTemperature())
                 .afternoonTemperature(entity.getAfternoonTemperature())
                 .eveningTemperature(entity.getEveningTemperature())

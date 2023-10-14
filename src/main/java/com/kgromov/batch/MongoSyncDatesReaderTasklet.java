@@ -29,7 +29,7 @@ public class MongoSyncDatesReaderTasklet implements Tasklet, StepExecutionListen
         Set<LocalDate> datesToSync = new HashSet<>();
         DailyTemperatureDocument row;
         while((row = delegate.read()) != null) {
-            datesToSync.add(row.getDate());
+            datesToSync.add(row.getDate().toLocalDate());
         }
         ExecutionContext executionContext = chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext();
         executionContext.put("datesToSync", datesToSync);

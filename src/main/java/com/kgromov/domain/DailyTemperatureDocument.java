@@ -3,9 +3,10 @@ package com.kgromov.domain;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.stream.DoubleStream;
 
 @Document
@@ -17,7 +18,8 @@ import java.util.stream.DoubleStream;
 public class DailyTemperatureDocument {
     @Id
     private ObjectId _id;
-    private LocalDate date;
+    @Indexed(unique = true)
+    private LocalDateTime date;
     private Double morningTemperature;
     private Double afternoonTemperature;
     private Double eveningTemperature;

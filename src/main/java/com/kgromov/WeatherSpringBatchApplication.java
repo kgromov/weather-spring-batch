@@ -18,9 +18,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @Slf4j
 @SpringBootApplication
@@ -31,6 +29,16 @@ public class WeatherSpringBatchApplication {
     }
 
     @Bean
+    ApplicationRunner exportToMongo(JobLauncher jobLauncher, Job exportFromRdbmsToMongoJob) {
+        return args -> {
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addLong("startedAt", System.currentTimeMillis())
+                    .toJobParameters();
+            jobLauncher.run(exportFromRdbmsToMongoJob, jobParameters);
+        };
+    }
+
+    //    @Bean
     ApplicationRunner findMissedMeasurementDays(DailyTemperatureRepository temperatureRepository) {
         return args -> {
             List<LocalDate> dates = temperatureRepository.findAll(Sort.by(Sort.Direction.ASC, "date"))
@@ -41,7 +49,7 @@ public class WeatherSpringBatchApplication {
             for (int i = 0; i < dates.size() - 1; i++) {
                 LocalDate prev = dates.get(i);
                 LocalDate next = dates.get(i + 1);
-                long diffInDays = ChronoUnit.DAYS.between(prev, next) ;
+                long diffInDays = ChronoUnit.DAYS.between(prev, next);
                 if (diffInDays > 1) {
                     List<LocalDate> iterMissed = IntStream.range(1, (int) diffInDays).boxed().map(prev::plusDays).toList();
                     missedDates.addAll(iterMissed);
@@ -51,7 +59,7 @@ public class WeatherSpringBatchApplication {
         };
     }
 
-//    @Bean
+    //    @Bean
     ApplicationRunner syncRange(JobLauncher jobLauncher,
                                 Job fetchTemperatureJob) {
         return args -> {

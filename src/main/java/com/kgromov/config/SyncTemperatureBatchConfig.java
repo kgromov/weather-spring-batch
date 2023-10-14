@@ -24,6 +24,7 @@ import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilde
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -82,6 +83,7 @@ public class SyncTemperatureBatchConfig {
      */
     @Bean
     @StepScope
+    @Lazy
     public JpaPagingItemReader<DailyTemperature> jpaPagingItemReader(EntityManagerFactory entityManagerFactory,
                                                                      @Value("#{jobParameters[syncStartDate]}") LocalDate syncStartDate) {
         return new JpaPagingItemReaderBuilder<DailyTemperature>()
@@ -107,11 +109,11 @@ public class SyncTemperatureBatchConfig {
     }
 
     @Bean
-    public Step writeToMongoStep(JpaPagingItemReader<DailyTemperature> jpaPagingItemReader,
+    public Step appendToMongo(JpaPagingItemReader<DailyTemperature> jpaPagingItemReader,
                                  MongoItemWriter<DailyTemperatureDocument> mongoItemWriter,
                                  JobRepository jobRepository,
                                  PlatformTransactionManager transactionManager) {
-        return new StepBuilder("write-to-mongo-step", jobRepository)
+        return new StepBuilder("append-to-mongo-step", jobRepository)
                 .<DailyTemperature, DailyTemperatureDocument>chunk(1000, transactionManager)
                 .reader(jpaPagingItemReader)
                 .processor(toMongoProcessor())
@@ -123,30 +125,30 @@ public class SyncTemperatureBatchConfig {
     @Bean
     public Job syncTemperatureJob(Step fetchTemperatureStep,
                                   Step readDatesToSyncStep,
-                                  Step writeToMongoStep,
+                                  Step appendToMongo,
                                   JobRepository jobRepository) {
         return new JobBuilder("writeToMongoJob", jobRepository)
                 // seems 1st and 2nd can be added to Flow to be processed in parallel
                 .start(fetchTemperatureStep)
                 .next(readDatesToSyncStep)
-                .next(writeToMongoStep)
+                .next(appendToMongo)
                 .build();
     }
 
     @Bean
     public Job fromMysqlToMongo(Step readDatesToSyncStep,
-                                Step writeToMongoStep,
+                                Step appendToMongo,
                                 JobRepository jobRepository) {
         return new JobBuilder("writeToMongoJob", jobRepository)
                 .start(readDatesToSyncStep)
-                .next(writeToMongoStep)
+                .next(appendToMongo)
                 .build();
     }
 
     @Bean
     public Job syncTemperatureParallelJob(Step fetchTemperatureStep,
                                           Step readDatesToSyncStep,
-                                          Step writeToMongoStep,
+                                          Step appendToMongo,
                                           JobRepository jobRepository,
                                           TaskExecutor taskExecutor) {
         Flow fetchFlow = new FlowBuilder<Flow>("fetch-flow")
@@ -161,7 +163,7 @@ public class SyncTemperatureBatchConfig {
                 .build();
         return new JobBuilder("sync-temperature-job", jobRepository)
                 .start(splitFlow)
-                .next(writeToMongoStep)
+                .next(appendToMongo)
                 .build()
                 .build();
     }

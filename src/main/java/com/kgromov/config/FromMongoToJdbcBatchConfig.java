@@ -132,7 +132,7 @@ public class FromMongoToJdbcBatchConfig {
                 log.info("{}: processed {} items", Thread.currentThread(), processedItems.get());
             }
             return DailyTemperature.builder()
-                    .date(document.getDate().minusDays(1))          // due to Mongo timezone diff
+                    .date(document.getDate().toLocalDate().minusDays(1))          // due to Mongo timezone diff
                     .morningTemperature(document.getMorningTemperature())
                     .afternoonTemperature(document.getAfternoonTemperature())
                     .eveningTemperature(document.getEveningTemperature())

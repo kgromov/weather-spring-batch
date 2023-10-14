@@ -19,9 +19,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import static com.kgromov.domain.City.ODESSA;
 
@@ -78,11 +76,5 @@ public class FetchTemperatureBatchConfig {
         SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor();
         asyncTaskExecutor.setConcurrencyLimit(Runtime.getRuntime().availableProcessors());
         return asyncTaskExecutor;
-    }
-
-    public static void main(String[] args) {
-        LocalDate startDate = LocalDate.parse("2010-01-26");
-        LocalDate endDate = LocalDate.parse("2022-03-21");
-        long days = ChronoUnit.DAYS.between(startDate, endDate);
     }
 }
