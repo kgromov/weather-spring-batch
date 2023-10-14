@@ -3,6 +3,7 @@ package com.kgromov.domain;
 import lombok.*;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serial;
@@ -22,6 +23,7 @@ public class DailyTemperatureDocument implements Serializable {
     private static final long serialVersionUID = -5976257794245662775L;
     @Id
     private ObjectId _id;
+    @Indexed(unique = true)
     private LocalDateTime date;
     private Double morningTemperature;
     private Double afternoonTemperature;
@@ -29,19 +31,19 @@ public class DailyTemperatureDocument implements Serializable {
     private Double nightTemperature;
 
     public Double getMax() {
-        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature,*/ nightTemperature)
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
                 .max()
                 .getAsDouble();
     }
 
     public Double getMin() {
-        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature, */nightTemperature)
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
                 .min()
                 .getAsDouble();
     }
 
     public Double getAverage() {
-        return DoubleStream.of(morningTemperature, afternoonTemperature, /*eveningTemperature, */nightTemperature)
+        return DoubleStream.of(morningTemperature, afternoonTemperature, eveningTemperature, nightTemperature)
                 .average()
                 .getAsDouble();
     }

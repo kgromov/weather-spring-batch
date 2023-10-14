@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.support.AbstractItemCountingItemStreamItemReader;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -44,7 +45,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     protected DailyTemperatureDto doRead() {
         String threadName = Thread.currentThread().getName();
         log.info("Thread {}: Read daily temperature", threadName);
-        if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
+        if (city == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
             return null;
         }
         synchronized (DailyTemperatureDto.class) {
@@ -88,8 +89,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
 
     private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
         return DailyTemperatureDto.builder()
-//                .date(measurementsDto.getDate().atStartOfDay().atZone(ZoneId.of("America/Virgin")).toLocalDateTime())
-                .date(measurementsDto.getDate().atStartOfDay())
+                .date(measurementsDto.getDate().atStartOfDay(ZoneId.of("UTC")).toLocalDateTime())
                 .morningTemperature(measurementsDto.getMorningTemperature())
                 .afternoonTemperature(measurementsDto.getAfternoonTemperature())
                 .eveningTemperature(measurementsDto.getEveningTemperature())

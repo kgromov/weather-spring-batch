@@ -14,6 +14,7 @@ import org.springframework.batch.item.support.AbstractItemCountingItemStreamItem
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -73,7 +74,7 @@ public class TemperatureDatesReader extends AbstractItemCountingItemStreamItemRe
 
     private DailyTemperatureDto mapToDto(TemperatureMeasurementsDto measurementsDto) {
         return DailyTemperatureDto.builder()
-                .date(measurementsDto.getDate().atStartOfDay())
+                .date(measurementsDto.getDate().atStartOfDay(ZoneId.of("UTC")).toLocalDateTime())
                 .morningTemperature(measurementsDto.getMorningTemperature())
                 .afternoonTemperature(measurementsDto.getAfternoonTemperature())
                 .eveningTemperature(measurementsDto.getEveningTemperature())

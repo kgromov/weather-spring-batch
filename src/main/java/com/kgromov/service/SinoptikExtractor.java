@@ -11,6 +11,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Primary
+@Service
 @Slf4j
 @RequiredArgsConstructor
-@Service
 public class SinoptikExtractor implements TemperatureExtractor {
     private final WeatherSource source;
 

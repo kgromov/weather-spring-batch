@@ -36,6 +36,18 @@ public class TemperatureMeasurementsDto {
         return getAvgTemperatureAtDayPart(NIGHT);
     }
 
+    private double getAvgTemperatureAtDayPart(PartOfTheDay partOfTheDay) {
+        LocalTime min = partOfTheDay.getStart();
+        LocalTime max = partOfTheDay.getEnd();
+        double temperature = dailyMeasurements.stream()
+                .filter(m -> m.getTime().compareTo(min) >= 0)
+                .filter(m -> m.getTime().isBefore(max))
+                .mapToInt(WeatherMeasurementDto::getTemperature)
+                .average()
+                .orElse(0.0);
+        return BigDecimal.valueOf(temperature).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
     @Override
     public String toString() {
         return "TemperatureMeasurementsDto{" +
@@ -45,16 +57,5 @@ public class TemperatureMeasurementsDto {
                 ", evening=" + BigDecimal.valueOf(this.getEveningTemperature()).setScale(2, RoundingMode.HALF_UP)  +
                 ", night=" + BigDecimal.valueOf(this.getNightTemperature()).setScale(2, RoundingMode.HALF_UP)  +
                 '}';
-    }
-
-    private double getAvgTemperatureAtDayPart(PartOfTheDay partOfTheDay) {
-        LocalTime min = partOfTheDay.getStart();
-        LocalTime max = partOfTheDay.getEnd();
-        return dailyMeasurements.stream()
-                .filter(m -> m.getTime().compareTo(min) >= 0)
-                .filter(m -> m.getTime().isBefore(max))
-                .mapToInt(WeatherMeasurementDto::getTemperature)
-                .average()
-                .orElse(0.0);
     }
 }

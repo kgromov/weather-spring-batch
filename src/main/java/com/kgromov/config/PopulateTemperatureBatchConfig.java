@@ -3,6 +3,7 @@ package com.kgromov.config;
 import com.kgromov.batch.TemperatureReader;
 import com.kgromov.batch.WriteToMongoProcessor;
 import com.kgromov.domain.DailyTemperatureDocument;
+import com.kgromov.domain.PartOfTheDay;
 import com.kgromov.dtos.DailyTemperatureDto;
 import com.kgromov.repository.DailyTemperatureRepository;
 import com.kgromov.service.TemperatureExtractor;
@@ -26,6 +27,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -49,8 +51,12 @@ public class PopulateTemperatureBatchConfig {
     public TemperatureReader temperatureReader(@Value("#{jobParameters[startDate]}") LocalDate syncStartDate,
                                                @Value("#{jobParameters[endDate]}") LocalDate syncEndDate) {
         LocalDate startDate = Optional.ofNullable(syncStartDate)
-                .orElseGet(() -> temperatureRepository.getLatestDateTemperature().plusDays(1));
+                .orElseGet(temperatureRepository::getLatestDateTemperature);
         LocalDate endDate = Optional.ofNullable(syncEndDate).orElseGet(() -> LocalDate.now(ZoneId.of("UTC")));
+        // wait for all measurements on data source
+        if (LocalDateTime.now(ZoneId.of("UTC")).toLocalTime().isBefore(PartOfTheDay.EVENING.getStart())) {
+            endDate = endDate.minusDays(1);
+        }
         log.debug("Dates to fetch temperature: [{}; {}]", startDate.format(ISO_DATE), endDate.format(ISO_DATE));
         return TemperatureReader.builder()
                 .temperatureExtractor(temperatureExtractor)
