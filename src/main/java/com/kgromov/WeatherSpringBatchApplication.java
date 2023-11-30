@@ -22,6 +22,16 @@ public class WeatherSpringBatchApplication {
         SpringApplication.run(WeatherSpringBatchApplication.class, args);
     }
 
+    @Profile("sync")
+    @Bean
+    ApplicationRunner syncMissedData(JobLauncher jobLauncher, Job syncTemperatureJob) {
+        return args -> {
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addLong("startedAt", System.currentTimeMillis())
+                    .toJobParameters();
+            jobLauncher.run(syncTemperatureJob, jobParameters);
+        };
+    }
 
     @Profile("crap")
     @Bean

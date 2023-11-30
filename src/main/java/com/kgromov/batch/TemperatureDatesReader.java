@@ -42,7 +42,9 @@ public class TemperatureDatesReader extends AbstractItemCountingItemStreamItemRe
     public void initQueue(StepExecution stepExecution) {
         log.info("Read before step execution");
         Set<LocalDate> datesToSync = (Set<LocalDate>) stepExecution.getJobExecution().getExecutionContext().get("datesToSync");
-        this.datesQueue = new ArrayBlockingQueue<>(datesToSync.size(), true, datesToSync);
+        if (!CollectionUtils.isEmpty(datesToSync)) {
+            this.datesQueue = new ArrayBlockingQueue<>(datesToSync.size(), true, datesToSync);
+        }
         log.info("Read datesToSync = {} before step execution", datesToSync);
     }
 

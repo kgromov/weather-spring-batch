@@ -45,7 +45,7 @@ public class TemperatureReader extends AbstractItemCountingItemStreamItemReader<
     protected DailyTemperatureDto doRead() {
         String threadName = Thread.currentThread().getName();
         log.info("Thread {}: Read daily temperature", threadName);
-        if (city == null || startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+        if (city == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
             return null;
         }
         synchronized (DailyTemperatureDto.class) {
