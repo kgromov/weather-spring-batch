@@ -30,6 +30,7 @@ public class WeatherSpringBatchApplication {
                     .addLong("startedAt", System.currentTimeMillis())
                     .toJobParameters();
             jobLauncher.run(syncTemperatureJob, jobParameters);
+            System.exit(0);
         };
     }
 
@@ -41,6 +42,7 @@ public class WeatherSpringBatchApplication {
                     .addLong("startedAt", System.currentTimeMillis())
                     .toJobParameters();
             jobLauncher.run(findCrapDataJob, jobParameters);
+            System.exit(0);
         };
     }
     @Profile("correction")
@@ -53,6 +55,7 @@ public class WeatherSpringBatchApplication {
                    .toJobParameters();
            jobLauncher.run(removeDuplicatesJob, jobParameters);
            log.info("Finish removeDuplicatesJob job ...");
+           System.exit(0);
        };
     }
 
